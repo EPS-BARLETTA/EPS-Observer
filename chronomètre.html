@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chronomètre</title>
+    <style>
+        /* Basic styling for buttons */
+        #timer-controls button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50; /* Green background */
+            color: white;
+            cursor: pointer;
+        }
+        #intermediate-times {
+            margin-top: 20px;
+        }
+        #intermediate-times ul {
+            list-style: none;
+            padding: 0;
+        }
+        #intermediate-times li {
+            margin-bottom: 5px;
+        }
+        /* Style pour la lucarne */
+        .lucarne {
+            position: fixed; 
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); 
+            z-index: 100; /* Pour qu'elle soit au-dessus des autres éléments */
+            display: none; /* Cachée au début */
+        }
+
+        .lucarne h2 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        #créateur {
+            text-align: center;
+            margin-top: 20px; /* Espace entre le chronomètre et l'encadré */
+            width: 300px; /* Largeur de l'encadré */
+            margin-left: auto; /* Marges automatiques pour centrer */
+            margin-right: auto;
+            padding: 10px;
+            border: 3px solid blue;
+            border-radius: 5px;
+        }
+
+        #créateur p {
+            margin: 0; /* Supprime les marges du paragraphe */
+        }
+
+        #créateur a {
+            display: block; /* Afficher le lien sur une nouvelle ligne */
+            margin-top: 5px;
+        }
+
+        #créateur button {
+            background-color: white;
+            color: blue;
+            border: 2px solid blue;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chronomètre</h1>
+
+    <label for="total-distance">Distance Totale (m) :</label>
+    <input type="number" id="total-distance" value="800"> 
+
+    <label for="intermediate-distance">Distance Temps Intermédiaire (m) :</label>
+    <input type="number" id="intermediate-distance" value="100"> 
+
+    <div id="race-info">
+        <span id="total-distance-display"></span>
+    </div> 
+
+    <div id="timer-controls">
+        <div>
+            <span id="timer-display">00:00:00</span>
+        </div>
+        <button id="start-button">Démarrer</button>
+        <button id="intermediate-button" style="background-color: #4CAF50;">Temps Intermédiaire</button> 
+        <button id="stop-button">Arrêter</button>
+        <button id="reset-button">Réinitialiser</button>
+    </div>
+
+    <table id="intermediate-table">
+        <thead>
+            <tr>
+                <th>Temps</th>
+                <th>Distance (m)</th>
+                <th>Vitesse (km/h)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Temps intermédiaires seront ajoutés ici dynamiquement -->
+        </tbody>
+    </table>
+
+    <div id="intermediate-times">
+        <ul id="time-list"></ul>
+    </div>
+
+    <div id="fin-course" class="lucarne">
+        <h2>Course terminée !</h2>
+        <p>Temps final : <span id="temps-final"></span></p>
+        <p>Vitesse moyenne : <span id="vitesse-moyenne"></span> km/h</p>
+        <button id="fermer-lucarne">Fermer</button>
+    </div>
+
+    <div id="créateur">
+        <p>Jérôme BARLETTA</p>
+        <a href="http://bjerome.eklablog.com/accueil-c30088056" target="_blank"><button>Accéder au blog</button></a>
+    </div>
+
+    <script>
+        const startButton = document.getElementById('start-button');
+        const intermediateButton = document.getElementById('intermediate-button');
+        const stopButton = document.getElementById('stop-button');
+        const resetButton = document.getElementById('reset-button');
+        const timerDisplay = document.getElementById('timer-display');
+        const totalDistanceInput = document.getElementById('total-distance');
+        const intermediateDistanceInput = document.getElementById('intermediate-distance');
+        const totalDistanceDisplay = document.getElementById('total-distance-display');
+        const intermediateTable = document.getElementById('intermediate-table').getElementsByTagName('tbody')[0]; 
+        const showIntermediateButton = document.getElementById('show-intermediate-button');
+        const timeList = document.getElementById('time-list');
+
+        let startTime = null;
+        let intervalId = null;
+        let intermediateTimes = []; 
+        let totalDistance = 800; // Distance totale de 800m (en m)
+        let currentDistance = 0; // Variable pour stocker la distance courante
+        let intermediateDistance = 100; // Distance Temps Intermédiaire (en m)
+        let totalSpeed = 0; // Variable pour stocker la vitesse totale
+
+        // Charger les paramètres du localStorage au chargement de la page
+        window.onload = function() {
+            totalDistanceInput.value = localStorage.getItem('totalDistance') || 800;
+            intermediateDistanceInput.value = localStorage.getItem('intermediateDistance') || 100;
+
+            // Mettre à jour l'affichage des informations du coureur
+            totalDistanceDisplay.textContent = `Distance Totale : ${totalDistance} m`; 
+        };
+
+        totalDistanceInput.addEventListener('input', () => {
+            totalDistance = parseInt(totalDistanceInput.value); // Met à jour la variable distance totale
+            totalDistanceDisplay.textContent = `Distance Totale : ${totalDistance} m`; // Met à jour l'affichage
+            localStorage.setItem('totalDistance', totalDistance); // Enregistrer la distance totale dans le localStorage
+        });
+
+        intermediateDistanceInput.addEventListener('input', () => {
+            intermediateDistance = parseInt(intermediateDistanceInput.value); // Met à jour la variable distance temps intermédiaire
+            localStorage.setItem('intermediateDistance', intermediateDistance); // Enregistrer la distance temps intermédiaire dans le localStorage
+        });
+
+        startButton.addEventListener('click', () => {
+            if (!intervalId) {
+                startTime = new Date();
+                intervalId = setInterval(updateTimer, 1000);
+                currentDistance = 0; // Réinitialise la distance courante
+                totalSpeed = 0; // Réinitialise la vitesse totale
+            }
+        });
+
+        intermediateButton.addEventListener('click', () => {
+            if (intervalId) { 
+                const now = new Date();
+                const elapsedTime = (now - startTime) / 1000;
+
+                // Vérifie si la distance courante plus la distance intermédiaire est inférieure à la distance totale
+                if (currentDistance + intermediateDistance <= totalDistance) { 
+                    currentDistance += intermediateDistance; // Met à jour la distance courante
+                    intermediateTimes.push({
+                        time: elapsedTime,
+                        distance: currentDistance, // Utilise la distance courante
+                    });
+                    updateIntermediateTable(); 
+                } else {
+                    alert("Course terminée !");
+                    stopButton.click(); // Arrête le chronomètre
+                }
+            }
+        });
+
+        stopButton.addEventListener('click', () => {
+            clearInterval(intervalId);
+            intervalId = null;
+
+            // Calcule la vitesse totale
+            const totalTime = (new Date() - startTime) / 1000; // Temps total en secondes
+            totalSpeed = (totalDistance / totalTime) * 3.6; // Vitesse totale en km/h
+
+            // Affiche le temps final et la vitesse totale
+            if (startTime !== null) { 
+                const endTime = new Date();
+                const finalTime = (endTime - startTime) / 1000; 
+                
+                // Affiche la lucarne "Fin de course"
+                afficherLucarne(finalTime, totalSpeed); 
+            }
+        });
+
+        resetButton.addEventListener('click', () => {
+            // Réinitialiser les valeurs
+            totalDistanceDisplay.textContent = '';
+            timerDisplay.textContent = '00:00:00';
+            intermediateTimes = []; 
+            intermediateTable.innerHTML = ''; // Clear table
+            timeList.innerHTML = ''; // Clear time list
+            clearInterval(intervalId); 
+            intervalId = null;
+            startTime = null; 
+            totalDistance = parseInt(totalDistanceInput.value); // Restaure la distance totale
+            currentDistance = 0; // Réinitialise la distance courante
+            totalSpeed = 0; // Réinitialise la vitesse totale
+            intermediateDistance = parseInt(intermediateDistanceInput.value); // Restaure la distance temps intermédiaire
+            // Cache la lucarne si elle est visible
+            document.getElementById("fin-course").style.display = "none"; 
+            // Efface les champs de distance
+            totalDistanceInput.value = '';
+            intermediateDistanceInput.value = '';
+        });
+
+        showIntermediateButton.addEventListener('click', () => {
+            timeList.innerHTML = ''; // Clear the list before adding new items
+            for (let i = 0; i < intermediateTimes.length; i++) {
+                const time = intermediateTimes[i].time;
+                const distance = intermediateTimes[i].distance;
+                const speed = calculateSpeed(time, distance);
+                timeList.innerHTML += `<li>Distance: ${distance}m - Time: ${formatTime(time)}s - Speed: ${speed.toFixed(2)}km/h</li>`;
+            }
+            // Affiche la vitesse totale si la course est terminée
+            if (currentDistance === totalDistance) {
+                timeList.innerHTML += `<li>Vitesse Totale: ${totalSpeed.toFixed(2)}km/h</li>`;
+            }
+        });
+
+        function updateTimer() {
+            const now = new Date();
+            const elapsedTime = (now - startTime) / 1000; 
+            const formattedTime = formatTime(elapsedTime);
+            timerDisplay.textContent = formattedTime; 
+        }
+
+        function formatTime(seconds) {
+            const hours = Math.floor(seconds / 3600); 
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return `${padNumber(hours)}:${padNumber(minutes)}:${padNumber(remainingSeconds)}`;
+        }
+
+        function padNumber(num) {
+            return num.toString().padStart(2, '0');
+        }
+
+        function updateIntermediateTable() {
+            intermediateTable.innerHTML = ''; 
+            for (let i = 0; i < intermediateTimes.length; i++) {
+                const time = intermediateTimes[i].time;
+                const distance = intermediateTimes[i].distance;
+                const speed = calculateSpeed(time, distance);
+                const newRow = intermediateTable.insertRow();
+                newRow.insertCell().textContent = formatTime(time);
+                newRow.insertCell().textContent = distance;
+                newRow.insertCell().textContent = speed.toFixed(2); // Affiche la vitesse
+            }
+        }
+
+        function calculateSpeed(timeInSeconds, distance) {
+            if (timeInSeconds === 0) {
+                return 0; 
+            }
+            return (distance / timeInSeconds) * 3.6; // Vitesse en km/h
+        }
+
+        // Fonction pour afficher la lucarne
+        function afficherLucarne(tempsFinal, vitesseMoyenne) {
+            const lucarne = document.getElementById("fin-course");
+            lucarne.style.display = "block";
+
+            document.getElementById("temps-final").textContent = formatTime(tempsFinal);
+            document.getElementById("vitesse-moyenne").textContent = vitesseMoyenne.toFixed(2);
+
+            const fermerButton = document.getElementById("fermer-lucarne");
+            fermerButton.addEventListener("click", () => {
+                lucarne.style.display = "none";
+            });
+        }
+    </script>
+</body>
+</html>
