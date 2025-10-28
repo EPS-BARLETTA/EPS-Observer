@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Observation • EPS Multi‑Observer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="./assets/style.css" />
+  <script type="module">
+    import {load, save, ensureObservablesFor, mastery3Buttons, exportPDF} from './assets/app.js';
+    const state = load();
+    const params = new URL(window.location.href).searchParams;
+    const champ = params.get('champ'); const apsa = params.get('apsa');
+    const obs = ensureObservablesFor(state, apsa);
+
+    let current = {
+      id: Math.random().toString(36).slice(2),
+      date: new Date().toISOString(),
+      apsa, items: JSON.parse(JSON.stringify(obs)),
+      observers: state.observers || [],
+      group: state.group || []
+    };
+
+    function render(){
+      document.getElementById('title').textContent = `${champ} — ${apsa}`;
+      const list=document.getElementById('list'); list.innerHTML="";
+      current.items.forEach((it, idx)=>{
+        const row=document.createElement('div'); row.className="obs-item";
+        const name=document.createElement('div'); name.textContent=it.text;
+        const ctr=document.createElement('div'); ctr.className='row';
+        const minus=document.createElement('button'); minus.className='btn btn-red buzzer'; minus.textContent='−';
+        const countP=document.createElement('div'); countP.className='count'; countP.textContent = `+${it.pos} / -${it.neg}`;
+        const plus=document.createElement('button'); plus.className='btn btn-green buzzer'; plus.textContent='+';
+        minus.onclick=()=>{ it.neg++; countP.textContent = `+${it.pos} / -${it.neg}`; saveState(); };
+        plus.onclick=()=>{ it.pos++; countP.textContent = `+${it.pos} / -${it.neg}`; saveState(); };
+        ctr.append(minus,countP,plus);
+        const levels = mastery3Buttons(it.level, (v)=>{ it.level=v; saveState(); });
+        row.append(name, ctr); row.append(levels);
+        list.append(row);
+      });
+    }
+    function saveState(){ save(state); }
+
+    window.addEventListener('DOMContentLoaded', ()=>{
+      if(!champ || !apsa){ document.body.innerHTML="<div class='section'>Paramètres manquants.</div>"; return; }
+      render();
+      document.getElementById('add').onclick = ()=>{
+        const t=document.getElementById('new').value.trim(); if(!t) return;
+        const it={text:t,pos:0,neg:0,level:"moyen"};
+        current.items.push(it);
+        state.observables.push({...it});
+        document.getElementById('new').value="";
+        render(); save(state);
+      };
+      document.getElementById('pdf').onclick = ()=>{
+        exportPDF(current);
+      };
+      document.getElementById('end').onclick = ()=>{
+        state.observations.unshift(current); save(state);
+        window.location.href = "./bilan.html";
+      };
+    });
+  </script>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <a class="btn btn-gray" href="./activity.html">← Activités</a>
+    <button class="btn btn-accent" id="pdf">📄 PDF direct</button>
+  </header>
+  <main class="main">
+    <section class="section">
+      <div class="pageTitle">
+        <h1 id="title">Observation</h1>
+        <div class="sub">Tap + / − • 3 niveaux (🔴/🟡/🟢) • Ajout d'observables à la volée</div>
+      </div>
+      <div class="card">
+        <div id="list" class="obs-list"></div>
+        <div class="row" style="margin-top:8px">
+          <input id="new" placeholder="Ajouter un observable en cours d'observation" />
+          <button class="btn btn-accent" id="add">➕ Ajouter</button>
+        </div>
+      </div>
+      <div class="nav">
+        <a class="btn btn-gray" href="./activity.html">⬅️ Activités</a>
+        <button class="btn btn-green" id="end">➡️ Terminer / Bilan</button>
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>

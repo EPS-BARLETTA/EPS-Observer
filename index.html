@@ -1,53 +1,28 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>EPS Observer — Accueil</title>
-  <link rel="stylesheet" href="./assets/style.css">
-  <script type="module">
-    import {EXPERIENCES} from './assets/data.js';
-    import {load, save, makeNav} from './assets/app.js';
-    const state = load();
-    window.addEventListener('DOMContentLoaded', ()=>{
-      document.body.append(makeNav("Accueil"));
-      document.getElementById('observer').value = state.context.observer || "";
-      document.getElementById('group').value = state.context.group || "";
-      document.getElementById('observer').oninput = e=>{ state.context.observer=e.target.value; save(state); };
-      document.getElementById('group').oninput = e=>{ state.context.group=e.target.value; save(state); };
-      const box = document.getElementById('experiences');
-      EXPERIENCES.forEach(exp=>{
-        const sec = document.createElement('section'); sec.className="card";
-        sec.innerHTML = `<h2 class="section-title">${exp.icon} ${exp.id} — ${exp.label}</h2>`;
-        const grid = document.createElement('div'); grid.className="grid grid-3";
-        exp.ppsa.forEach(name=>{
-          const a = document.createElement('a'); a.className="tile"; a.href = `./page.html?exp=${encodeURIComponent(exp.id)}&ppsa=${encodeURIComponent(name)}`;
-          a.innerHTML = `<div class="big">${name}</div><div class="small">Ouvrir la page d'action</div>`;
-          grid.append(a);
-        });
-        sec.append(grid);
-        box.append(sec);
-      });
-    });
-  </script>
+  <meta charset="utf-8" />
+  <title>EPS Multi‑Observer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="./assets/style.css" />
 </head>
 <body>
+<div class="app">
   <header class="header">
-    <div class="brand">EPS Observer • Accueil</div>
-    <div class="row no-print">
-      <a class="btn btn-cta btn-pill" href="./export.html">Exporter PDF</a>
-    </div>
+    <a class="btn btn-gray" href="./activity.html">Démarrer</a>
   </header>
   <main class="main">
-    <section class="card">
-      <h2 class="section-title">Contexte</h2>
-      <div class="grid grid-2">
-        <div><label>Observateur·rice</label><input id="observer" placeholder="Prénom"></div>
-        <div><label>Groupe (prénoms, virgules)</label><input id="group" placeholder="ex: Alice, Bob"></div>
+    <section class="section">
+      <div class="hero">
+        <div>
+          <h1>EPS Multi‑Observer</h1>
+          <p>Observer • Analyser • Exporter — <b>tous sports</b>, tous <b>champs d’apprentissage</b>.</p>
+          <a class="btn btn-accent start" href="./activity.html">Commencer</a>
+        </div>
       </div>
-      <p class="muted" style="margin-top:8px">Toutes les données restent en local (LocalStorage). Aucune donnée envoyée.</p>
     </section>
-    <div id="experiences"></div>
   </main>
+  <footer class="footer">EPS Multi‑Observer — iPad • Hors‑ligne • PDF natif</footer>
+</div>
 </body>
 </html>

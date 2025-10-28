@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Observables • EPS Multi‑Observer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="./assets/style.css" />
+  <script type="module">
+    import {load, save, ensureObservablesFor} from './assets/app.js';
+    const state = load();
+    const params = new URL(window.location.href).searchParams;
+    const champ = params.get('champ'); const apsa = params.get('apsa');
+
+    function render(){
+      document.getElementById('title').textContent = `${champ} — ${apsa}`;
+      const list = document.getElementById('list'); list.innerHTML="";
+      const items = ensureObservablesFor(state, apsa);
+      items.forEach((o,i)=>{
+        const row=document.createElement('div'); row.className="list-row";
+        row.innerHTML = `<div>${o.text}</div>`;
+        const del = document.createElement('button'); del.className="btn btn-gray"; del.textContent="Supprimer";
+        del.onclick=()=>{ items.splice(i,1); save(state); render(); };
+        row.append(del); list.append(row);
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', ()=>{
+      if(!champ || !apsa){ document.body.innerHTML="<div class='section'>Paramètres manquants.</div>"; return; }
+      render();
+      document.getElementById('add').onclick = ()=>{
+        const t=document.getElementById('new').value.trim(); if(!t) return;
+        state.observables.push({text:t,pos:0,neg:0,level:"moyen"}); save(state); document.getElementById('new').value=""; render();
+      };
+      document.getElementById('go').onclick = ()=>{
+        window.location.href = `./observe.html?champ=${encodeURIComponent(champ)}&apsa=${encodeURIComponent(apsa)}`;
+      };
+    });
+  </script>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <a class="btn btn-gray" href="./activity.html">← Activités</a>
+  </header>
+  <main class="main">
+    <section class="section">
+      <div class="pageTitle">
+        <h1 id="title">Observables</h1>
+        <div class="sub">Sélectionne/ajoute des observables (tu peux en ajouter pendant l'observation aussi)</div>
+      </div>
+      <div class="card">
+        <div id="list" class="obs-list"></div>
+        <div class="row" style="margin-top:8px">
+          <input id="new" placeholder="Ajouter un observable" />
+          <button class="btn btn-accent" id="add">➕ Ajouter</button>
+        </div>
+      </div>
+      <div class="nav">
+        <span></span>
+        <button class="btn btn-green" id="go">Démarrer l'observation ▶️</button>
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>
