@@ -9,11 +9,19 @@
       --bg:#f6f8fb;--card:#fff;--text:#0f172a;--muted:#6b7280;--border:#e5e7eb;
       --green:#16a34a;--green-dark:#065f46;--red:#ef4444;--amber:#f59e0b;--blue:#2563eb;
       --shadow:0 2px 12px rgba(15,23,42,.06);
+
       /* Couleurs CA */
-      --ca1:#ef4444;--ca2:#059669;--ca3:#7c3aed;--ca4:#2563eb;--ca5:#0ea5e9;
+      --ca1:#ef4444;  /* performance */
+      --ca2:#f59e0b;  /* environnements */
+      --ca3:#7c3aed;  /* artistique */
+      --ca4:#16a34a;  /* affrontement */
+      --ca5:#06b6d4;  /* santé */
+
       /* Panneaux contexte */
-      --panel-observers:#dbeafe; --panel-group:#fff7ed;
-      --panel-observers-border:#3b82f6; --panel-group-border:#f59e0b;
+      --panel-observers:#dbeafe;
+      --panel-group:#fff7ed;
+      --panel-observers-border:#3b82f6;
+      --panel-group-border:#f59e0b;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -56,59 +64,76 @@
     .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
     .grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
     .bar{display:flex;justify-content:space-between;align-items:center;gap:10px}
-    .seg{border:1px solid var(--border);padding:8px;border-radius:12px;margin-top:8px;background:#fff}
+    .seg{border:1px dashed var(--border);padding:8px;border-radius:12px;margin-top:8px;background:#fff}
     .tile{border:1px solid var(--border);border-radius:16px;padding:14px;background:#fff;box-shadow:var(--shadow);text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:6px;transition:transform .06s ease, box-shadow .12s ease}
     .tile .big{font-size:18px;font-weight:900}
     .tile .small{font-size:12px;color:#9ca3af}
     .tile:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(15,23,42,.10)}
-    /* Observation rows */
-    .obs-item{display:grid;grid-template-columns:1fr auto auto 220px;gap:8px;align-items:center;border:1px solid var(--border);border-radius:12px;padding:10px;background:#fff}
+
+    /* Observation rows – layout clair +/− séparé */
+    .obs-item{
+      display:grid;
+      grid-template-columns: 1fr auto auto; /* libellé | moins | plus */
+      gap:12px; align-items:center;
+      border:1px solid var(--border); border-radius:12px; padding:12px; background:#fff;
+    }
     .obs-label{font-weight:900; padding:6px 10px; border:1px solid var(--border); border-radius:10px; background:#f8fafc}
     .obs-hint{display:block; font-size:12px; color:#6b7280; margin-top:4px}
-    .count{min-width:96px;text-align:center;border:1px solid var(--border);border-radius:10px;padding:8px;font-weight:800}
-    .buzzers{display:flex;gap:6px;align-items:center}
-    .buzzer{width:64px;height:64px;border-radius:999px;font-size:28px;display:inline-flex;align-items:center;justify-content:center}
-    .mini{padding:10px 14px;border-radius:10px;font-size:14px}
-    .fmb{display:flex;gap:10px;flex-wrap:wrap}
+    .pmGroup{display:flex; align-items:center; gap:8px}
+    .pmGroup .buzzer{width:64px;height:64px;border-radius:999px;font-size:28px;display:inline-flex;align-items:center;justify-content:center}
+    .pmGroup .tally{
+      min-width:64px; text-align:center; font-weight:900; border:1px solid var(--border);
+      border-radius:10px; padding:10px 12px; background:#fff;
+    }
+    .pmGroup .corr{padding:8px 10px; border-radius:10px}
+    .obs-extra{
+      grid-column: 1 / -1; /* s’étend sous toute la ligne */
+      display:grid; gap:10px;
+      grid-template-columns: 1fr 1fr; /* niveaux | note */
+      border:1px dashed var(--border); border-radius:10px; padding:8px; background:#f9fafb;
+    }
+    .fmb{display:flex; gap:10px; flex-wrap:wrap}
     .fmb button{border:0;border-radius:10px;padding:8px 10px;background:#e5e7eb;cursor:pointer;min-width:110px}
     .fmb button.active{outline:2px solid #111;outline-offset:2px;background:#fff}
-    .note{width:100%; border:1px solid var(--border); border-radius:10px; padding:8px; font-size:14px}
-    /* Option bar */
+    .note{width:100%; border:1px solid var(--border); border-radius:10px; padding:10px; font-size:14px}
+    @media (max-width: 980px){
+      .obs-item{grid-template-columns:1fr}
+      .obs-extra{grid-template-columns:1fr}
+    }
+
     .optbar{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin:8px 0 12px 0}
     .optbar .opt{display:flex; align-items:center; gap:6px; background:#fff; border:1px solid var(--border); padding:8px 10px; border-radius:12px}
+
     .footer{border-top:1px solid var(--border);background:#fff;padding:10px 16px;text-align:center;color:#6b7280;font-size:12px}
     .hidden{display:none}
+
+    /* Chrono */
+    .chrono{display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:#fff; border:1px solid var(--border); border-radius:14px; padding:10px 12px; box-shadow:var(--shadow); font-weight:800;}
+    .chrono .time{min-width:220px; text-align:center; font-size:46px; letter-spacing:.5px; color:#2563eb}
+    .chrono .ctrls{display:flex; gap:8px; align-items:center}
+    .chrono .mode{display:flex; align-items:center; gap:8px}
+    .chrono .mode .dur{width:120px}
+    .laps{margin-top:8px}
+    .lap{font-size:12px; color:#374151; background:#f3f4f6; border:1px solid #e5e7eb; border-radius:10px; padding:4px 8px; display:inline-flex; gap:8px; margin-right:6px; margin-bottom:6px}
+
+    /* Toast */
+    .toast{position:fixed; left:50%; transform:translateX(-50%); top:14px; background:#111; color:#fff; padding:10px 14px; border-radius:999px; box-shadow:0 8px 24px rgba(0,0,0,.25); font-size:14px; z-index:50; opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease;}
+    .toast.show{opacity:1; transform:translate(-50%,0)}
+
     /* PRINT / PDF */
     .print-page{background:#fff;border:1px solid var(--border);box-shadow:var(--shadow);padding:20px;border-radius:18px;-webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact;}
     .print-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px}
-    .print-title{font-size:22px;font-weight:900;letter-spacing:.3px}
+    .print-title{font-size:28px;font-weight:900;letter-spacing:.3px}
     .print-sub{color:#6b7280;font-size:12px}
     .print-card{border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:12px;background:#fff}
     .avoid-break{break-inside:avoid;page-break-inside:avoid}
     .dot{display:inline-block;width:10px;height:10px;border-radius:999px;margin-right:8px;vertical-align:baseline}
     .dot.red{background:#ef4444}.dot.amber{background:#f59e0b}.dot.green{background:#22c55e}.dot.darkgreen{background:#065f46}
+
     /* Ribbons colorées pour les blocs CA */
     .ca-card{position:relative; overflow:hidden}
     .ca-card::before{content:""; position:absolute; inset:auto 0 0 0; height:6px; background:var(--ca-color); border-bottom-left-radius:16px; border-bottom-right-radius:16px;}
     .title .pill{display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:900; color:#fff; letter-spacing:.2px; background:var(--ca-color)}
-    /* Toast */
-    .toast{position:fixed; left:50%; transform:translateX(-50%); top:14px; background:#111; color:#fff; padding:10px 14px; border-radius:999px; box-shadow:0 8px 24px rgba(0,0,0,.25); font-size:14px; z-index:50; opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease;}
-    .toast.show{opacity:1; transform:translate(-50%,0)}
-    /* Chrono */
-    .chrono{display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:#fff; border:1px solid var(--border); border-radius:14px; padding:10px 12px; box-shadow:var(--shadow); font-weight:800;}
-    .chrono .time{min-width:200px; text-align:center; font-size:46px; letter-spacing:.5px; color:#7c3aed}
-    .chrono .ctrls{display:flex; gap:8px; align-items:center}
-    .laps{margin-top:8px}
-    .lap{font-size:12px; color:#374151; background:#f3f4f6; border:1px solid #e5e7eb; border-radius:10px; padding:4px 8px; display:inline-flex; gap:8px; margin-right:6px; margin-bottom:6px}
-    .mode{display:flex; align-items:center; gap:6px}
-    .dur{width:90px}
-    /* Historique (dans le bilan) */
-    .hist-item{display:grid; grid-template-columns:1fr auto auto; gap:8px; align-items:center; border:1px solid var(--border); background:#fff; border-radius:12px; padding:10px}
-    .hist-title{font-weight:900}
-    .hist-meta{font-size:12px; color:#6b7280}
-    /* Responsive fix */
-    @media (max-width: 980px){ .obs-item{grid-template-columns:1fr} }
-    @media (min-width: 981px) and (max-width: 1180px){ .obs-item{grid-template-columns:1fr auto} }
   </style>
 
   <!-- Dépendances PDF -->
@@ -139,12 +164,12 @@
   </header>
 
   <main class="main">
-    <!-- PAGE 1 : COVER (inchangée) -->
+    <!-- PAGE 1 : COVER -->
     <section id="page-cover" class="section">
       <div class="hero">
         <div>
           <h1>EPS Observer</h1>
-          <p>Tous champs CA1 à C5 & toutes APSA</p>
+          <p>Tous champs CA1 à CA5 & toutes APSA</p>
           <button class="btn btn-green start" id="goSetup">Commencer</button>
         </div>
       </div>
@@ -168,7 +193,7 @@
         </div>
         <div class="col">
           <div class="panel group">
-            <div class="title">👥 Groupe observé</div>
+            <div class="title">👥 Groupe observé (par défaut)</div>
             <input type="text" id="grpInput" placeholder="ex. Inès, Léo" />
             <div class="chips" id="grpChips"></div>
           </div>
@@ -204,28 +229,38 @@
       <div class="pageTitle" style="display:flex; align-items:flex-end; justify-content:space-between; gap:10px">
         <div>
           <h1 style="margin-bottom:4px">Observation — <span id="titleAPSA">—</span> • <span id="titleNiveau">N—</span></h1>
-          <div class="sub">Tap + / − • 4 niveaux : 🔴/🟡/🟢/🟩 • Notes/temps (option) • Laps & minuteur</div>
+          <div class="sub">Multi-groupes • +/− alignés • Niveaux 🔴/🟡/🟢/🟩 • Notes (option) • Laps & minuteur</div>
           <div class="optbar">
             <label class="opt"><input type="checkbox" id="optShowNotes" checked/> Champ libre</label>
             <label class="opt"><input type="checkbox" id="optShowLevels" checked/> Niveaux</label>
             <label class="opt"><input type="checkbox" id="optShowPM" checked/> Boutons +/-</label>
           </div>
+          <div class="seg" id="groupsBar">
+            <div class="bar">
+              <div class="title">Groupes observés</div>
+              <div class="row">
+                <button class="btn btn-blue" id="addGroup">➕ Ajouter un groupe</button>
+              </div>
+            </div>
+            <div id="groupsTabs" class="row" style="margin-top:8px"></div>
+          </div>
         </div>
         <div>
           <div class="chrono">
-            <span class="time" id="chronoTime">00:00.0</span>
+            <span class="time" id="chronoTime">00:00:00</span>
             <div class="mode">
               <select id="chronoMode">
                 <option value="chrono">Chrono</option>
                 <option value="timer">Minuteur</option>
               </select>
-              <input class="dur" id="chronoDur" placeholder="mm:ss" />
+              <!-- type="time" = roue iPad -->
+              <input class="dur" id="chronoDur" type="time" step="1" />
             </div>
             <div class="ctrls">
-              <button class="btn btn-outline mini" id="chronoStart">Démarrer</button>
-              <button class="btn btn-outline mini" id="chronoLap">Tour</button>
-              <button class="btn btn-outline mini" id="chronoPause">Stop</button>
-              <button class="btn btn-outline mini" id="chronoReset">Réinitialiser</button>
+              <button class="btn btn-outline" id="chronoStart">▶️ Start</button>
+              <button class="btn btn-outline" id="chronoLap">⏱ Tour</button>
+              <button class="btn btn-outline" id="chronoPause">⏸ Stop</button>
+              <button class="btn btn-outline" id="chronoReset">🔄 Reset</button>
             </div>
           </div>
           <div class="laps" id="laps"></div>
@@ -238,6 +273,7 @@
         <button class="btn btn-gray" id="obBack">⬅️ Observables</button>
         <div class="row">
           <button class="btn btn-amber" id="obAdd">➕ Observable</button>
+          <button class="btn btn-blue" id="obEnd">✅ Terminer la session</button>
           <button class="btn btn-green" id="obToBilan">📑 Bilan</button>
         </div>
       </div>
@@ -248,21 +284,26 @@
       <div class="print-page" id="printRoot">
         <div class="print-header">
           <div>
-            <div class="print-title">Bilan d'observation</div>
-            <div class="print-sub" id="bilanSubtitle">—</div>
+            <div class="print-title">Dossier d’observation</div>
+            <div class="print-sub" id="bilanMeta">Date : —</div>
           </div>
-          <div class="print-sub" id="bilanMeta">Date : —</div>
+          <div class="print-sub">EPS Observer</div>
+        </div>
+
+        <!-- Couverture PDF (rendu via html2canvas) -->
+        <div id="coverPreview" class="print-card avoid-break" style="text-align:center">
+          <div style="font-size:54px; font-weight:900; margin-bottom:6px">Dossier d’observation</div>
+          <div id="coverObservers" style="font-size:54px; font-weight:900; margin-bottom:10px">—</div>
+          <div id="coverObserved" style="font-size:26px; font-weight:800; color:#0f172a; opacity:.9; margin-bottom:10px">—</div>
+          <div id="coverApp" style="font-size:22px; font-weight:900; letter-spacing:.3px; color:#111">EPS Observer</div>
+          <div id="coverDate" style="font-size:14px; color:#6b7280; margin-top:6px"></div>
         </div>
 
         <div id="bilanContent"></div>
 
-        <!-- Historique intégré en bas du bilan -->
-        <div class="print-card avoid-break" style="margin-top:14px">
-          <div class="title">🗂️ Historique des sessions</div>
-          <div id="histList" class="grid"></div>
-          <div class="row" style="margin-top:10px">
-            <button class="btn btn-green-dark" id="histExportAll">📄 Exporter tout (PDF)</button>
-          </div>
+        <div class="seg" style="margin-top:10px">
+          <div class="title">📝 Commentaire global</div>
+          <textarea id="commentGlobal" placeholder="(facultatif)"></textarea>
         </div>
 
         <div class="nav" style="margin-top:14px">
@@ -286,8 +327,8 @@
 <div id="toast" class="toast">APSA sélectionnée</div>
 
 <script>
-const APP_VERSION = "2.2.1";
-const REF_VERSION = "CCA-base-2025.01";
+const APP_VERSION = "3.0.0";
+const REF_VERSION = "CCA-base-2025.02";
 
 /* ================== Données ================== */
 const CHAMPS = [
@@ -338,21 +379,6 @@ const DEFAULT_OBS = {
   "Yoga":["Respiration","Alignement","Stabilité","Fluidité"]
 };
 
-const CCA_LEVELS = {
-  "Course en durée": {1:["Allure simple (tenir)","Courir sans s'arrêter","Repères de distance"],
-                      2:["Régularité sur 8 min","Ajuste l'allure","Récupération active"],
-                      3:["Repères FC/respiration","Planifie 12–20 min","Chronos intermédiaires"],
-                      4:["Optimisation (négative split)","Stratégie adaptée","Accompagnement d'un pair"]},
-  "Badminton": {1:["Service régulier","Replace au centre","Renvoie haut et loin"],
-                2:["Varie trajectoires","Occupe l’espace","Met en difficulté"],
-                3:["Construit l’échange","Accélère au bon moment","Gère le score"],
-                4:["Stratégie filière","Fixe puis rupture","Exploit faiblesses"]},
-  "Escalade": {1:["Assurage en 5 temps","Repère 2-3 prises","Appuis stables"],
-               2:["Choix d’itinéraire simple","Transfert d’appuis","Gère la peur"],
-               3:["Lecture de voie","Engagement maîtrisé","Gestion effort"],
-               4:["Optimise repos","Anticipe sections clés","Communication fine"]}
-};
-
 const CA_LEVEL_HINTS = {
   CA1:{1:"Découverte / Allure de base",2:"Régularité & tenue",3:"Optimisation technique",4:"Stratégie & gestion d'effort"},
   CA2:{1:"Sécurité & repères",2:"Choix simples",3:"Lecture/anticipation",4:"Optimisation itinéraire/effort"},
@@ -362,32 +388,9 @@ const CA_LEVEL_HINTS = {
 };
 
 /* ================== State ================== */
-const STORAGE_KEY = "eps_observer_v2_levels_all";
-function freshApp(){
-  return {
-    observers: [], group: [],
-    champs: JSON.parse(JSON.stringify(CHAMPS)),
-    selected: { champ:null, apsa:null, niveau:2 },
-    observables: [],
-    current: null,
-    sessions: [],
-    settings:{ showNotes:true, showLevels:true, showPM:true },
-    timer:{mode:"chrono", running:false, start:0, elapsed:0, target:0, handle:null, laps:[]}
-  };
-}
-const app = freshApp();
-
+const STORAGE_KEY = "eps_observer_v3_multigroups";
 function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(app)); }
-function load(){
-  try{
-    const raw=localStorage.getItem(STORAGE_KEY);
-    if(raw){
-      const obj=JSON.parse(raw);
-      Object.assign(app, freshApp(), obj);
-      app.sessions = Array.isArray(app.sessions) ? app.sessions : [];
-    }
-  }catch{}
-}
+function load(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(raw) Object.assign(app, JSON.parse(raw)); }catch{} }
 function hardReset(){
   if(!confirm("Tout réinitialiser ?")) return;
   localStorage.removeItem(STORAGE_KEY);
@@ -395,8 +398,24 @@ function hardReset(){
   renderAll(); show("cover"); save();
 }
 
+function freshApp(){
+  return {
+    observers: [], groupDefault: [],
+    champs: JSON.parse(JSON.stringify(CHAMPS)),
+    selected: { champ:null, apsa:null, niveau:2 },
+    observables: [],
+    session: null,         // session en cours {id,date, champ, apsa, niveau, observers[], groups:[{id,names[], items[]}]}
+    observations: [],      // historique de sessions terminées
+    settings:{ showNotes:true, showLevels:true, showPM:true },
+    timer:{mode:"chrono", running:false, start:0, elapsed:0, target:0, handle:null, laps:[]},
+    commentGlobal: ""
+  };
+}
+const app = freshApp();
+
 /* ================== Helpers ================== */
 const $ = (id)=>document.getElementById(id);
+const uid = ()=> Math.random().toString(36).slice(2);
 function toChips(container, arr, onRemove){
   container.innerHTML = "";
   (arr||[]).forEach((name, i)=>{
@@ -421,18 +440,23 @@ function toast(msg){
   clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>t.classList.remove("show"), 1600);
 }
-function uid(){ return Math.random().toString(36).slice(2); }
+function normalizeNames(list){ return (list||[]).map(s=>s.trim()).filter(Boolean); }
 
-/* ================== Chrono / Minuteur ================== */
-function parseDur(s){
-  const m=String(s||"").trim().match(/^(\\d{1,3}):(\\d{2})$/);
+/* ================== Chrono / Minuteur simplifié ================== */
+function timeInputToMs(){
+  const val = $("chronoDur").value || "";
+  // format "HH:MM:SS" (iPad roue)
+  const m = val.match(/^(\d{2}):(\d{2})(?::(\d{2}))?$/);
   if(!m) return 0;
-  return (parseInt(m[1],10)*60+parseInt(m[2],10))*1000;
+  const h = parseInt(m[1]||"0",10), mn=parseInt(m[2]||"0",10), s=parseInt(m[3]||"0",10);
+  return ((h*3600)+(mn*60)+s)*1000;
 }
-function formatTime(ms){
-  const sign=ms<0?"-":""; ms=Math.abs(ms);
-  const m=Math.floor(ms/60000); const s=Math.floor((ms%60000)/1000); const d=Math.floor((ms%1000)/100);
-  return `${sign}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${d}`;
+function formatHMS(ms){
+  ms = Math.max(0, ms|0);
+  const h = Math.floor(ms/3600000);
+  const m = Math.floor((ms%3600000)/60000);
+  const s = Math.floor((ms%60000)/1000);
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
 function updateChrono(){
   const now=Date.now(); let cur=0;
@@ -447,17 +471,17 @@ function updateChrono(){
       toast("⏱️ Temps écoulé");
     }
   }
-  $("chronoTime").textContent = formatTime(cur);
+  $("chronoTime").textContent = formatHMS(cur);
 }
 function startChrono(){
   if(app.timer.running) return;
   if(app.timer.mode==="timer"){
-    const t = parseDur($("chronoDur").value);
-    if(t<=0){ alert("Renseigne une durée mm:ss pour le minuteur."); return; }
+    const t = timeInputToMs();
+    if(t<=0){ alert("Renseigne une durée valide (HH:MM:SS) pour le minuteur."); return; }
     if(app.timer.target !== t){ app.timer.target = t; app.timer.elapsed = 0; }
   }
   app.timer.running=true; app.timer.start=Date.now();
-  app.timer.handle=setInterval(updateChrono,100);
+  app.timer.handle=setInterval(updateChrono,250);
   updateChrono();
 }
 function pauseChrono(){
@@ -469,7 +493,7 @@ function pauseChrono(){
 }
 function resetChrono(){
   app.timer.running=false; app.timer.start=0; app.timer.elapsed=0;
-  app.timer.target=(app.timer.mode==="timer")?parseDur($("chronoDur").value):0;
+  app.timer.target=(app.timer.mode==="timer")?timeInputToMs():0;
   app.timer.laps=[]; $("laps").innerHTML="";
   if(app.timer.handle){ clearInterval(app.timer.handle); app.timer.handle=null; }
   updateChrono(); save();
@@ -491,15 +515,12 @@ function getHintFor(apsa, level){
   return arr[level] || arr[2];
 }
 function buildObservablesFor(apsa, niveau){
-  if(CCA_LEVELS[apsa] && CCA_LEVELS[apsa][niveau]){
-    return CCA_LEVELS[apsa][niveau].map(t=>({text:t.split("|")[0], hint:null, pos:0,neg:0,level:"moyen",note:""}));
-  }
   const base = DEFAULT_OBS[apsa] || ["Observable 1","Observable 2"];
   const hint = getHintFor(apsa, niveau);
-  return base.map(k=>({text:`${k} — ${hint}`, hint:hint, pos:0,neg:0,level:"moyen",note:""}));
+  return base.map(k=>({text:`${k} — ${hint}`, pos:0,neg:0,level:"moyen",note:""}));
 }
 
-/* ================== Renders ================== */
+/* ================== UI Renders ================== */
 function renderChamps(){
   const grid = $("champsGrid"); grid.innerHTML = "";
   // Sélecteur de niveau
@@ -513,13 +534,12 @@ function renderChamps(){
     app.selected.niveau=Number(b.getAttribute("data-lvl")); save();
     if(app.selected.apsa){
       app.observables = buildObservablesFor(app.selected.apsa, app.selected.niveau);
-      renderObservables(); renderObserve();
+      renderObservables(); if(app.session) renderObserve();
     }
     renderChamps();
   });
   grid.appendChild(lvlWrap);
 
-  // Blocs CA
   CHAMPS.forEach(c=>{
     const sec = document.createElement("div"); sec.className="card ca-card";
     sec.style.setProperty('--ca-color', c.color);
@@ -557,7 +577,7 @@ function renderChamps(){
 }
 function renderChoose(){
   toChips($("obsChips"), app.observers, (i)=>{ app.observers.splice(i,1); save(); renderChoose(); });
-  toChips($("grpChips"), app.group, (i)=>{ app.group.splice(i,1); save(); renderChoose(); });
+  toChips($("grpChips"), app.groupDefault, (i)=>{ app.groupDefault.splice(i,1); save(); renderChoose(); });
   renderChamps();
 }
 function renderObservables(){
@@ -572,167 +592,149 @@ function renderObservables(){
     row.appendChild(del); list.appendChild(row);
   });
 }
+function renderGroupsTabs(){
+  const tabs=$("groupsTabs"); tabs.innerHTML="";
+  if(!app.session || !(app.session.groups||[]).length){
+    tabs.innerHTML = `<span class="muted">Aucun groupe • utilise “➕ Ajouter un groupe”.</span>`;
+    return;
+  }
+  app.session.groups.forEach((g, idx)=>{
+    const b=document.createElement("button");
+    b.className="btn "+(app.session.activeGroupId===g.id?"btn-green":"btn-gray");
+    b.textContent = (g.names||[]).join(", ") || `Groupe ${idx+1}`;
+    b.onclick = ()=>{ app.session.activeGroupId = g.id; save(); renderObserve(); };
+    tabs.appendChild(b);
+
+    const rm=document.createElement("button");
+    rm.className="btn btn-outline";
+    rm.textContent="✖︎";
+    rm.title="Supprimer ce groupe";
+    rm.onclick = ()=>{
+      if(!confirm("Supprimer ce groupe ?")) return;
+      const i = app.session.groups.findIndex(x=>x.id===g.id);
+      if(i>=0){ app.session.groups.splice(i,1); }
+      if(app.session.activeGroupId===g.id){ app.session.activeGroupId = app.session.groups[0]?.id || null; }
+      save(); renderGroupsTabs(); renderObserve();
+    };
+    tabs.appendChild(rm);
+  });
+}
+function currentGroup(){
+  if(!app.session) return null;
+  return app.session.groups.find(g=>g.id===app.session.activeGroupId) || null;
+}
 function renderObserve(){
-  $("titleAPSA").textContent = app.selected.apsa || "—";
-  $("titleNiveau").textContent = `N${app.selected.niveau}`;
+  $("titleAPSA").textContent = app.session?.apsa || app.selected.apsa || "—";
+  $("titleNiveau").textContent = `N${app.session?.niveau || app.selected.niveau}`;
+  renderGroupsTabs();
+
   const cont = $("observeList"); cont.innerHTML="";
-  if(!app.current){ cont.innerHTML = `<div class="muted" style="padding:10px">Aucune observation en cours.</div>`; return; }
+  if(!app.session){ cont.innerHTML = `<div class="muted" style="padding:10px">Aucune session en cours.</div>`; return; }
+  const g = currentGroup();
+  if(!g){ cont.innerHTML = `<div class="muted" style="padding:10px">Ajoute un groupe à observer.</div>`; return; }
 
   const showNotes = !!app.settings.showNotes;
   const showLevels = !!app.settings.showLevels;
   const showPM = !!app.settings.showPM;
 
-  app.current.items.forEach((it, idx)=>{
+  (g.items||[]).forEach((it, idx)=>{
     const row=document.createElement("div"); row.className="obs-item";
 
     const name=document.createElement("div");
-    const parts = String(it.text).split(" — ");
-    const label = parts[0]; const hint = parts.slice(1).join(" — ");
-    name.innerHTML = `<span class="obs-label"><b>${label}</b></span>${hint?`<span class="obs-hint">N${app.selected.niveau}: ${hint}</span>`:""}`;
+    const [label, hint] = String(it.text).split(" — ");
+    name.innerHTML = `<span class="obs-label"><b>${label}</b></span>${hint?`<span class="obs-hint">N${app.session.niveau}: ${hint}</span>`:""}`;
 
-    const ctr=document.createElement("div"); ctr.className='buzzers';
+    const colMinus=document.createElement("div"); colMinus.className="pmGroup";
     if(showPM){
-      const minus=document.createElement("button"); minus.className='btn btn-red buzzer'; minus.textContent='−';
-      const decNeg=document.createElement("button"); decNeg.className='btn btn-outline mini'; decNeg.textContent='corr. -';
-      const countP=document.createElement("div"); countP.className='count'; countP.textContent = `+${it.pos} / -${it.neg}`;
-      const decPos=document.createElement("button"); decPos.className='btn btn-outline mini'; decPos.textContent='corr. +';
-      const plus=document.createElement("button"); plus.className='btn btn-green buzzer'; plus.textContent='+';
+      const btnMinus=document.createElement("button"); btnMinus.className='btn btn-red buzzer'; btnMinus.textContent='−';
+      const tallyMinus=document.createElement("div"); tallyMinus.className='tally'; tallyMinus.textContent = `-${it.neg}`;
+      const corrMinus=document.createElement("button"); corrMinus.className='btn btn-outline corr'; corrMinus.textContent='corr. -';
+      btnMinus.onclick=()=>{ it.neg++; tallyMinus.textContent = `-${it.neg}`; save(); };
+      corrMinus.onclick=()=>{ if(it.neg>0){ it.neg--; tallyMinus.textContent = `-${it.neg}`; save(); } };
+      colMinus.append(btnMinus, tallyMinus, corrMinus);
+    }
 
-      minus.onclick=()=>{ it.neg++; countP.textContent = `+${it.pos} / -${it.neg}`; persistCurrent(); };
-      plus.onclick=()=>{ it.pos++; countP.textContent = `+${it.pos} / -${it.neg}`; persistCurrent(); };
-      decNeg.onclick=()=>{ if(it.neg>0){ it.neg--; countP.textContent = `+${it.pos} / -${it.neg}`; persistCurrent(); } };
-      decPos.onclick=()=>{ if(it.pos>0){ it.pos--; countP.textContent = `+${it.pos} / -${it.neg}`; persistCurrent(); } };
+    const colPlus=document.createElement("div"); colPlus.className="pmGroup";
+    if(showPM){
+      const corrPlus=document.createElement("button"); corrPlus.className='btn btn-outline corr'; corrPlus.textContent='corr. +';
+      const tallyPlus=document.createElement("div"); tallyPlus.className='tally'; tallyPlus.textContent = `+${it.pos}`;
+      const btnPlus=document.createElement("button"); btnPlus.className='btn btn-green buzzer'; btnPlus.textContent='+';
+      btnPlus.onclick=()=>{ it.pos++; tallyPlus.textContent = `+${it.pos}`; save(); };
+      corrPlus.onclick=()=>{ if(it.pos>0){ it.pos--; tallyPlus.textContent = `+${it.pos}`; save(); } };
+      colPlus.append(corrPlus, tallyPlus, btnPlus);
+    }
 
-      ctr.append(minus,decNeg,countP,decPos,plus);
-    } else { ctr.classList.add("hidden"); }
+    row.append(name, colMinus, colPlus);
 
-    const levels = document.createElement("div"); levels.className="fmb";
-    if(showLevels){
-      [["fragile","🔴 Fragile"],["moyen","🟡 Moyen"],["bon","🟢 Bon"],["tb","🟩 Très bon"]].forEach(([v,lab])=>{
-        const b=document.createElement("button"); b.textContent=lab; if(it.level===v) b.classList.add("active");
-        b.onclick=()=>{ it.level=v; renderObserve(); persistCurrent(); };
-        levels.appendChild(b);
-      });
-    } else { levels.classList.add("hidden"); }
+    if(showLevels || showNotes){
+      const extra=document.createElement("div"); extra.className="obs-extra";
 
-    const noteWrap=document.createElement("div");
-    if(showNotes){
-      const input=document.createElement("input");
-      input.className="note";
-      input.placeholder="Note/temps (ex: 12''3, 1'05'', consigne…)";
-      input.value = it.note||"";
-      input.oninput = (e)=>{ it.note = e.target.value; persistCurrent(); };
-      noteWrap.appendChild(input);
-    } else { noteWrap.classList.add("hidden"); }
+      const levels = document.createElement("div"); levels.className="fmb";
+      if(showLevels){
+        [["fragile","🔴 Fragile"],["moyen","🟡 Moyen"],["bon","🟢 Bon"],["tb","🟩 Très bon"]].forEach(([v,lab])=>{
+          const b=document.createElement("button"); b.textContent=lab; if(it.level===v) b.classList.add("active");
+          b.onclick=()=>{ it.level=v; renderObserve(); save(); };
+          levels.appendChild(b);
+        });
+      }
 
-    row.append(name, ctr, levels, noteWrap);
+      const noteWrap=document.createElement("div");
+      if(showNotes){
+        const input=document.createElement("input");
+        input.className="note";
+        input.placeholder="Note/temps (ex: 12''3, 1'05'', consigne…)";
+        input.value = it.note||"";
+        input.oninput = (e)=>{ it.note = e.target.value; save(); };
+        noteWrap.appendChild(input);
+      }
+
+      extra.append(levels, noteWrap);
+      row.appendChild(extra);
+    }
+
     cont.append(row);
   });
 }
 function renderBilan(){
-  const team=(app.observers||[]).join(", ")||"—";
-  $("bilanSubtitle").textContent = `Observateurs : ${team} • ${new Date().toLocaleString()}`;
   $("bilanMeta").textContent = `Date : ${new Date().toLocaleDateString()}`;
+  $("coverDate").textContent = new Date().toLocaleDateString();
+
+  const observersTxt = (app.session?.observers||app.observers||[]).join(", ") || "Observateurs";
+  $("coverObservers").textContent = observersTxt;
+  const observedNames = (currentGroup()?.names||app.groupDefault||[]).join(", ") || "—";
+  $("coverObserved").textContent = observedNames;
 
   const cont=$("bilanContent"); cont.innerHTML="";
-  const sessions = getAllSessionsForReport();
 
-  if(!sessions.length){
-    cont.innerHTML = `<div class="print-card">Aucune observation enregistrée.</div>`;
-  } else {
-    sessions.forEach((o)=>{
-      const card=document.createElement("div"); card.className="print-card avoid-break";
-      const h=document.createElement("div");
-      h.innerHTML = `<b>${o.champ||"—"} — ${o.apsa||"—"}</b> (N${o.niveau||app.selected.niveau})`;
-      const who=document.createElement("div"); who.className="muted";
-      who.textContent = `Obs: ${(o.observers||[]).join(", ")||"—"} • Groupe: ${(o.group||[]).join(", ")||"—"} • ${new Date(o.date||Date.now()).toLocaleString()}`;
-      const laps = (o.laps||[]).length ? `<div class="muted" style="margin-top:6px">Tours: ${o.laps.join(" • ")}</div>` : "";
-      const ul=document.createElement("ul"); ul.style.margin="8px 0 0 16px";
-      (o.items||[]).forEach(it=>{
-        const li=document.createElement("li");
-        const color = it.level==="fragile"?"red":it.level==="moyen"?"amber":it.level==="bon"?"green":"darkgreen";
-        const parts = String(it.text).split(" — ");
-        const label = parts[0]; const hint = parts.slice(1).join(" — ");
-        const hintTxt = hint ? ` — ${hint}` : "";
-        const note = (it.note||"").trim() ? ` — <i>${it.note}</i>` : "";
-        li.innerHTML = `<span class="dot ${color}"></span><b>${label}</b>${hintTxt} — +${it.pos} / -${it.neg}${note}`;
-        ul.append(li);
-      });
-      card.append(h, who, ul);
-      if(laps) card.insertAdjacentHTML("beforeend", laps);
-      cont.append(card);
+  const sess = app.session;
+  if(!sess){ cont.innerHTML = `<div class="print-card">Aucune session en cours.</div>`; return; }
+
+  (sess.groups||[]).forEach((g,gi)=>{
+    const card=document.createElement("div"); card.className="print-card avoid-break";
+    const h=document.createElement("div");
+    h.innerHTML = `<b>Groupe ${gi+1}</b> — ${(g.names||[]).join(", ")||"—"} • <span class="muted">${new Date(sess.date).toLocaleString()}</span> • <i>${sess.champ} — ${sess.apsa} (N${sess.niveau})</i>`;
+    const ul=document.createElement("ul"); ul.style.margin="8px 0 0 16px";
+    (g.items||[]).forEach(it=>{
+      const color = it.level==="fragile"?"red":it.level==="moyen"?"amber":it.level==="bon"?"green":"darkgreen";
+      const note = (it.note||"").trim() ? ` — <i>${it.note}</i>` : "";
+      const [label, hint] = String(it.text).split(" — ");
+      const hintTxt = hint ? ` — ${hint}` : "";
+      const li=document.createElement("li");
+      li.innerHTML = `<span class="dot ${color}"></span><b>${label}</b>${hintTxt} — +${it.pos} / -${it.neg}${note}`;
+      ul.appendChild(li);
     });
-  }
-
-  renderHistoryInBilan();
-}
-function renderHistoryInBilan(){
-  const wrap = $("histList"); wrap.innerHTML = "";
-  if(!app.sessions.length){
-    wrap.innerHTML = '<div class="muted" style="padding:10px">Aucune session sauvegardée pour le moment.</div>';
-    return;
-  }
-  app.sessions.slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(sess=>{
-    const item=document.createElement("div"); item.className="hist-item";
-    const left=document.createElement("div");
-    const title=document.createElement("div"); title.className="hist-title";
-    title.textContent = `${sess.apsa||"—"} (N${sess.niveau||"?"})`;
-    const meta=document.createElement("div"); meta.className="hist-meta";
-    meta.textContent = `${new Date(sess.date).toLocaleString()} • ${sess.champ||"—"} • Groupe: ${(sess.group||[]).join(", ")||"—"}`;
-    left.append(title, meta);
-
-    const open=document.createElement("button"); open.className="btn btn-blue"; open.textContent="Ouvrir";
-    open.onclick=()=>{ app.current = JSON.parse(JSON.stringify(sess)); save(); renderObserve(); show("observe"); };
-    const del=document.createElement("button"); del.className="btn btn-red"; del.textContent="Supprimer";
-    del.onclick=()=>{
-      if(!confirm("Supprimer définitivement cette session ?")) return;
-      app.sessions = app.sessions.filter(s=>s.id!==sess.id);
-      if(app.current && app.current.id===sess.id){ app.current=null; }
-      save(); renderHistoryInBilan();
-    };
-    item.append(left, open, del);
-    wrap.append(item);
+    card.append(h, ul);
+    cont.append(card);
   });
-}
 
-/* ================== Multi-sessions helpers ================== */
-function persistCurrent(){
-  if(!app.current) return;
-  const idx = app.sessions.findIndex(s=>s.id===app.current.id);
-  const snapshot = {
-    id: app.current.id,
-    date: app.current.date,
-    champ: app.current.champ,
-    apsa: app.current.apsa,
-    niveau: app.current.niveau || app.selected.niveau,
-    observers: [...(app.current.observers||[])],
-    group: [...(app.current.group||[])],
-    items: app.current.items.map(x=>({...x})),
-    laps: [...(app.timer.laps||[])]
-  };
-  if(idx>=0) app.sessions[idx]=snapshot; else app.sessions.push(snapshot);
-  save();
-}
-function getAllSessionsForReport(){
-  const map = new Map();
-  (app.sessions||[]).forEach(s=>map.set(s.id, s));
-  if(app.current){
-    map.set(app.current.id, {
-      ...app.current,
-      niveau: app.current.niveau || app.selected.niveau,
-      laps: [...(app.timer.laps||[])]
-    });
-  }
-  return Array.from(map.values()).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  $("commentGlobal").value = app.commentGlobal || "";
 }
 
 /* ================== Export PDF ================== */
-async function exportPDF(allFromHistory=false){
+async function exportPDF(){
   const ok = await depsReady.catch(()=>false);
   if(!ok){ alert("Dépendances PDF non chargées."); return; }
-
-  const sessions = allFromHistory ? (app.sessions||[]) : getAllSessionsForReport();
-  if(!sessions.length){ alert("Aucune session à exporter."); return; }
+  if(!app.session){ alert("Aucune session en cours."); return; }
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: "pt", format: "a4" });
@@ -740,10 +742,9 @@ async function exportPDF(allFromHistory=false){
   const pageH = doc.internal.pageSize.getHeight();
   const margin = 40;
 
-  const team = (app.observers||[]).filter(Boolean);
-  const some = sessions[sessions.length-1] || app.current || {};
-  const group = (some.group||[]).filter(Boolean);
-  const nameForFile = (group.length?group:team).join("-").replace(/[^\w-]+/g,"-").replace(/-+/g,"-");
+  const team = (app.session.observers||[]).filter(Boolean);
+  const group = (currentGroup()?.names||[]).filter(Boolean);
+  const nameForFile = (team.length?team:group).join("-").replace(/[^\w-]+/g,"-").replace(/-+/g,"-");
   const date = new Date().toISOString().slice(0,10);
 
   function footer(p,total){
@@ -767,23 +768,8 @@ async function exportPDF(allFromHistory=false){
     return { imgData, imgW: fullW, imgH: fullH, ratio };
   }
 
-  // Couverture
-  const cover = document.createElement("div");
-  cover.style.width="794px"; cover.style.height="1123px"; cover.style.display="flex";
-  cover.style.alignItems="center"; cover.style.justifyContent="center"; cover.style.flexDirection="column";
-  cover.style.background="linear-gradient(135deg,#ffffff 0%, #f6f8fb 100%)";
-  cover.style.color="#0f172a"; cover.style.border="1px solid #e5e7eb"; cover.style.borderRadius="18px";
-  cover.style.padding="48px"; cover.style.position="fixed"; cover.style.left="-99999px";
-  cover.innerHTML = `
-    <span style="display:inline-block;padding:6px 12px;border-radius:999px;font-weight:800;background:#eef2ff;color:#3730a3;border:1px solid #e0e7ff;letter-spacing:.3px;margin-bottom:16px">EPS Observer</span>
-    <h1 style="font-size:54px;font-weight:900;text-align:center;line-height:1.12;margin:0 0 14px 0">Dossier d’observation</h1>
-    <div style="font-size:32px;text-align:center;opacity:.95;margin:0 0 10px 0;font-weight:800">${(group.length?group:team).join(", ")||"Observateurs"}</div>
-    <div style="font-size:18px;color:#6b7280;text-align:center">${new Date().toLocaleDateString()}</div>
-    <div style="position:absolute;bottom:22px;left:0;right:0;text-align:center;font-size:12px;color:#6b7280">APSA: ${some.apsa||app.current?.apsa||"—"} • Champ: ${some.champ||app.current?.champ||"—"} • Niveau: N${some.niveau||app.selected.niveau}</div>
-  `;
-  document.body.appendChild(cover);
-  const coverShot = await snapEl(cover);
-  document.body.removeChild(cover);
+  // Couverture synthétique (on capture #coverPreview pour respecter la typographie demandée)
+  const coverShot = await snapEl(document.getElementById("coverPreview"));
   const maxW = pageW - margin*2, maxH = pageH - margin*2;
   let w = coverShot.imgW, h = coverShot.imgH;
   const scale = Math.min(maxW / w, maxH / h);
@@ -791,12 +777,12 @@ async function exportPDF(allFromHistory=false){
   const x = (pageW - w)/2, top = (pageH - h)/2;
   doc.addImage(coverShot.imgData, "PNG", x, top, w, h, undefined, "FAST");
 
-  // Bilan multi-sessions : snapshot du printRoot (avec historique déjà rendu dessous)
+  // Bilan (capture printRoot sans la carte de couverture – on va cacher provisoirement)
+  const coverEl = document.getElementById("coverPreview");
+  coverEl.style.display = "none";
   const printRoot = document.getElementById("printRoot");
-  const keep = printRoot.innerHTML;
-  renderBilan(); // s'assurer que tout est à jour
   const shot = await snapEl(printRoot);
-  printRoot.innerHTML = keep;
+  coverEl.style.display = ""; // restore
 
   newPage();
   doc.addImage(shot.imgData, "PNG", margin, margin, shot.imgW, shot.imgH, undefined, "FAST");
@@ -804,36 +790,35 @@ async function exportPDF(allFromHistory=false){
   const total = doc.getNumberOfPages();
   for(let p=1;p<=total;p++){ doc.setPage(p); drawFooterCentered(p); }
 
-  const filename = `EPS-${nameForFile||"Observateurs"}-${(some.apsa||"APSA")}-N${some.niveau||app.selected.niveau}-${date}.pdf`;
+  const filename = `EPS-Observer_${nameForFile||"Observateurs"}_${(app.session?.apsa||"APSA")}_${date}.pdf`;
   doc.save(filename);
 }
 
 /* ================== Wiring ================== */
-function renderAll(){ renderChoose(); renderObservables(); renderObserve(); renderBilan(); }
-
 document.addEventListener("DOMContentLoaded", ()=>{
   show("cover");
   load();
 
-  $("btnHelp").onclick = ()=> alert("1) Choisis CA/APSA + niveau et le contexte • 2) Observables (N1→N4) • 3) Observe (options, +/−, niveaux, notes, chrono/minuteur) • 4) Bilan (historique intégré) → PDF.\nAucune donnée n'est envoyée : tout est local.");
+  // Header
+  $("btnHelp").onclick = ()=> alert("1) Choisis CA/APSA + niveau et le contexte • 2) Observables (N1→N4) • 3) Observe (multi-groupes, +/−, niveaux, notes, chrono/minuteur) • 4) Bilan → PDF.\nAucune donnée n'est envoyée : tout est local.");
   $("btnHardReset").onclick = hardReset;
 
-  // nav cover -> choose
+  // Cover -> Choose
   $("goSetup").onclick = ()=> show("choose");
 
   // chips inputs
   $("obsInput").addEventListener("keydown",(e)=>{
     if(["Enter",",",";"].includes(e.key)){
       e.preventDefault();
-      const arr = $("obsInput").value.replace(/\\r\\n?/g,"\\n").split(/[ ,;\\n]+/).map(s=>s.trim()).filter(Boolean);
+      const arr = $("obsInput").value.replace(/\r\n?/g,"\n").split(/[ ,;\n]+/).map(s=>s.trim()).filter(Boolean);
       app.observers = Array.from(new Set([...(app.observers||[]), ...arr])); $("obsInput").value=""; save(); renderChoose();
     }
   });
   $("grpInput").addEventListener("keydown",(e)=>{
     if(["Enter",",",";"].includes(e.key)){
       e.preventDefault();
-      const arr = $("grpInput").value.replace(/\\r\\n?/g,"\\n").split(/[ ,;\\n]+/).map(s=>s.trim()).filter(Boolean);
-      app.group = Array.from(new Set([...(app.group||[]), ...arr])); $("grpInput").value=""; save(); renderChoose();
+      const arr = $("grpInput").value.replace(/\r\n?/g,"\n").split(/[ ,;\n]+/).map(s=>s.trim()).filter(Boolean);
+      app.groupDefault = Array.from(new Set([...(app.groupDefault||[]), ...arr])); $("grpInput").value=""; save(); renderChoose();
     }
   });
 
@@ -850,7 +835,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
   $("chronoLap").onclick   = ()=> addLap();
   updateChrono();
 
-  // pages
+  // choose
   $("backChoose").onclick = ()=> show("choose");
   $("btnAddObs").onclick = ()=>{
     const v = $("newObs").value.trim(); if(!v) return;
@@ -858,33 +843,65 @@ document.addEventListener("DOMContentLoaded", ()=>{
   };
   $("startObserve").onclick = ()=>{
     const items = app.observables.map(o=>({text:o.text, pos:0, neg:0, level:"moyen", note:""}));
-    const session = {
+    app.session = {
       id: uid(),
       date: new Date().toISOString(),
       champ: app.selected.champ, apsa: app.selected.apsa,
       niveau: app.selected.niveau,
-      observers: [...(app.observers||[])], group:[...(app.group||[])],
-      items, laps: []
+      observers: [...(app.observers||[])],
+      groups: [],
+      activeGroupId: null
     };
-    app.current = JSON.parse(JSON.stringify(session));
-    app.sessions.push(session);
-    save(); renderObserve(); show("observe");
+    // créer 1er groupe avec le groupe par défaut si renseigné
+    if((app.groupDefault||[]).length){
+      const g = { id: uid(), names:[...app.groupDefault], items: JSON.parse(JSON.stringify(items)) };
+      app.session.groups.push(g);
+      app.session.activeGroupId = g.id;
+    }
+    save(); renderGroupsTabs(); renderObserve(); show("observe");
+  };
+
+  // observation
+  $("addGroup").onclick = ()=>{
+    if(!app.session){ alert("Démarre d’abord une session (bouton Démarrer l’observation)."); return; }
+    const names = prompt("Noms du groupe (séparés par virgule) :", "");
+    if(names==null) return;
+    const arr = names.split(",").map(s=>s.trim()).filter(Boolean);
+    const items = app.observables.map(o=>({text:o.text, pos:0, neg:0, level:"moyen", note:""}));
+    const g = { id: uid(), names: arr, items };
+    app.session.groups.push(g);
+    app.session.activeGroupId = g.id;
+    save(); renderGroupsTabs(); renderObserve();
   };
   $("obBack").onclick = ()=> show("observables");
   $("obAdd").onclick = ()=>{
     const v = prompt("Nom de l'observable à ajouter :"); if(!v) return;
     const it={text:v,pos:0,neg:0,level:"moyen",note:""};
-    if(!app.current){ alert("Pas d'observation en cours."); return; }
-    app.current.items.push(it);
-    app.observables.push({text:v,pos:0,neg:0,level:"moyen",note:""});
-    persistCurrent(); renderObserve();
+    const g = currentGroup();
+    if(!g){ alert("Ajoute d’abord un groupe."); return; }
+    g.items.push(it);
+    app.observables.push({text:v,pos:0,neg:0,level:"moyen",note:""}); // dispo pour futurs groupes
+    save(); renderObserve();
+  };
+  $("obEnd").onclick = ()=>{
+    if(!app.session){ alert("Pas de session en cours."); return; }
+    app.observations.unshift(JSON.parse(JSON.stringify(app.session)));
+    save();
+    toast("Session enregistrée dans l’historique");
   };
   $("obToBilan").onclick = ()=>{ renderBilan(); show("bilan"); };
-  $("bilanBack").onclick = ()=> show("observe");
-  $("bilanExportPDF").onclick = ()=> exportPDF(false);
-  $("histExportAll").onclick = ()=> exportPDF(true);
 
-  renderAll();
+  // bilan
+  $("bilanBack").onclick = ()=> show("observe");
+  $("commentGlobal").oninput = (e)=>{ app.commentGlobal = e.target.value; save(); };
+  $("bilanExportPDF").onclick = async ()=>{ renderBilan(); await exportPDF(); };
+
+  // protections
+  window.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') save(); });
+  window.addEventListener('beforeunload', save);
+
+  // initial renders
+  renderChoose(); renderObservables(); renderGroupsTabs(); renderObserve(); renderBilan();
 });
 </script>
 </body>
