@@ -2,12 +2,11 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <title>EPS Observer (debug)</title>
+  <title>EPS Observer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root{
       --bg:#f6f8fb;--card:#fff;--text:#0f172a;--muted:#6b7280;--border:#e5e7eb;
-      --p2:#e0f2fe;--p3:#dcfce7;--p4:#fef3c7;--p5:#fae8ff;--libre:#f3f4f6;
       --green:#16a34a;--green-dark:#065f46;--red:#ef4444;--amber:#f59e0b;--blue:#2563eb;
       --shadow:0 2px 12px rgba(15,23,42,.06);
     }
@@ -21,8 +20,8 @@
     .btn-green-dark{background:var(--green-dark);color:#fff}
     .btn-blue{background:var(--blue);color:#fff}
     .btn-gray{background:#e5e7eb}
-    .btn-red{background:var(--red);color:#fff}
-    .btn-amber{background:var(--amber);color:#111}
+    .btn-red{background:#ef4444;color:#fff}
+    .btn-amber{background:#f59e0b;color:#111}
     .main{flex:1;display:flex;align-items:center;justify-content:center;padding:24px}
     .section{width:min(1100px,95vw)}
     .pageTitle{text-align:center;margin:8px 0 20px}
@@ -52,19 +51,32 @@
     .tile{border:1px solid var(--border);border-radius:16px;padding:14px;background:#fff;box-shadow:var(--shadow);text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:6px}
     .tile .big{font-size:18px;font-weight:900}
     .tile .small{font-size:12px;color:var(--muted)}
-
     .obs-item{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;border:1px solid var(--border);border-radius:12px;padding:10px;background:#fff}
     .count{min-width:56px;text-align:center;border:1px solid var(--border);border-radius:10px;padding:8px;font-weight:800}
     .buzzer{width:64px;height:64px;border-radius:999px;font-size:28px;display:inline-flex;align-items:center;justify-content:center}
     .fmb{display:flex;gap:6px;flex-wrap:wrap}
     .fmb button{border:0;border-radius:10px;padding:8px 10px;background:#e5e7eb;cursor:pointer}
     .fmb button.active{outline:2px solid #111;outline-offset:2px;background:#fff}
-
     .footer{border-top:1px solid var(--border);background:#fff;padding:10px 16px;text-align:center;color:#6b7280;font-size:12px}
     .hidden{display:none}
-
-    .errorbar{position:fixed;bottom:0;left:0;right:0;background:#fee2e2;color:#991b1b;border-top:1px solid #fecaca;padding:8px 12px;font-size:12px;display:none;z-index:99}
-    .errorbar pre{white-space:pre-wrap;margin:0}
+    /* PRINT / PDF */
+    .print-page{
+      background:#fff;border:1px solid var(--border);box-shadow:var(--shadow);
+      padding:20px;border-radius:18px;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact;
+    }
+    .print-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px}
+    .print-title{font-size:22px;font-weight:900;letter-spacing:.3px}
+    .print-sub{color:var(--muted);font-size:12px}
+    .print-card{border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:12px;background:#fff}
+    .avoid-break{break-inside:avoid;page-break-inside:avoid}
+    .dot{display:inline-block;width:10px;height:10px;border-radius:999px;margin-right:8px;vertical-align:baseline}
+    .dot.red{background:#ef4444}.dot.amber{background:#f59e0b}.dot.green{background:#22c55e}.dot.blue{background:#3b82f6}
+    @page{ size:A4; margin:14mm 12mm; }
+    @media print{
+      .header,.nav,.no-print,.modal{display:none!important}
+      body{background:#fff}
+    }
   </style>
 </head>
 <body>
@@ -75,6 +87,7 @@
   </header>
 
   <main class="main">
+    <!-- PAGE 1 : COVER -->
     <section id="page-cover" class="section">
       <div class="hero">
         <div>
@@ -85,6 +98,7 @@
       </div>
     </section>
 
+    <!-- PAGE 2 : CHOIX CA / APSA + CONTEXTE -->
     <section id="page-choose" class="section hidden">
       <div class="pageTitle">
         <h1>Activité</h1>
@@ -118,6 +132,7 @@
       </div>
     </section>
 
+    <!-- PAGE 3 : OBSERVABLES (pré-config) -->
     <section id="page-observables" class="section hidden">
       <div class="pageTitle">
         <h1>Observables</h1>
@@ -138,6 +153,7 @@
       </div>
     </section>
 
+    <!-- PAGE 4 : OBSERVATION -->
     <section id="page-observe" class="section hidden">
       <div class="pageTitle">
         <h1>Observation — <span id="titleAPSA">—</span></h1>
@@ -155,19 +171,27 @@
       </div>
     </section>
 
+    <!-- PAGE 5 : BILAN -->
     <section id="page-bilan" class="section hidden">
-      <div class="card" style="padding:0">
-        <div style="padding:20px">
-          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px">
-            <div>
-              <div style="font-size:22px;font-weight:900;letter-spacing:.3px">Bilan d'observation</div>
-              <div class="muted" id="bilanSubtitle">—</div>
-            </div>
-            <div class="muted" id="bilanMeta">Date : —</div>
+      <div class="print-page">
+        <div class="print-header">
+          <div>
+            <div class="print-title">Bilan d'observation</div>
+            <div class="print-sub" id="bilanSubtitle">—</div>
           </div>
-          <div id="bilanContent"></div>
+          <div class="print-sub" id="bilanMeta">Date : —</div>
+        </div>
+
+        <div id="bilanContent"></div>
+
+        <div class="nav" style="margin-top:14px">
+          <button class="btn btn-gray" id="bilanBack">⬅️ Retour</button>
+          <div class="row">
+            <button class="btn btn-green-dark" id="bilanExportPDF">📄 Exporter (impression)</button>
+          </div>
         </div>
       </div>
+
       <div class="footer">EPS Observer – Style AcroJuge – JB</div>
     </section>
   </main>
@@ -177,20 +201,8 @@
   </footer>
 </div>
 
-<div class="errorbar" id="errorbar"><pre id="errtxt"></pre></div>
-
 <script>
-(function(){
-  function showError(msg, src, line, col, err){
-    const bar=document.getElementById('errorbar');
-    const pre=document.getElementById('errtxt');
-    pre.textContent = (msg||'') + (src? ('\\n' + src + ':' + line + ':' + col):'') + (err && err.stack? ('\\n' + err.stack):'');
-    bar.style.display='block';
-  }
-  window.onerror = function(message, source, lineno, colno, error){ showError(message, source, lineno, colno, error); };
-  window.onunhandledrejection = function(e){ showError('Unhandled Promise Rejection', '', 0, 0, e.reason || e); };
-})();
-
+/* ======= Données officielles (CA + APSA de base) & observables ======= */
 const CHAMPS = [
   { id:"CA1", label:"Réaliser une performance motrice maximale mesurable", baseAPSA:[
     "Course de 1/2 fond","Course de relais","Combiné athlétique","Natation de vitesse"
@@ -239,7 +251,7 @@ const DEFAULT_OBS = {
 /* ===== PERSISTENCE ===== */
 const STORAGE_KEY = "eps_observer_acrostyle_v1";
 function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(app)); }
-function load(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(raw) Object.assign(app, JSON.parse(raw)); }catch(e){ console.warn('load error', e); } }
+function load(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(raw) Object.assign(app, JSON.parse(raw)); }catch{} }
 function hardReset(){
   if(!confirm("Tout réinitialiser ?")) return;
   localStorage.removeItem(STORAGE_KEY);
@@ -252,11 +264,11 @@ function freshApp(){
   return {
     observers: [],
     group: [],
-    champs: JSON.parse(JSON.stringify(CHAMPS)),
+    champs: JSON.parse(JSON.stringify(CHAMPS)), // for add APSA
     selected: { champ:null, apsa:null },
-    observables: [],
-    observations: [],
-    current: null,
+    observables: [], // current APSA selection
+    observations: [], // history
+    current: null,    // in-progress observation
   };
 }
 const app = freshApp();
@@ -284,8 +296,7 @@ function show(which){
 
 /* ===== CHAMPS UI ===== */
 function renderChamps(){
-  const grid = $("champsGrid"); if(!grid){ console.warn('No champsGrid'); return; }
-  grid.innerHTML = "";
+  const grid = $("champsGrid"); grid.innerHTML = "";
   app.champs.forEach(c=>{
     const sec = document.createElement("div"); sec.className="card";
     sec.innerHTML = `<div class="title">${c.id} — ${c.label}</div>`;
@@ -369,11 +380,11 @@ function renderBilan(){
   $("bilanMeta").textContent = `Date : ${new Date().toLocaleDateString()}`;
   const cont=$("bilanContent"); cont.innerHTML="";
   if(!(app.observations||[]).length){
-    cont.innerHTML = `<div class="card">Aucune observation enregistrée.</div>`;
+    cont.innerHTML = `<div class="print-card">Aucune observation enregistrée.</div>`;
     return;
   }
   app.observations.forEach((o,i)=>{
-    const card=document.createElement("div"); card.className="card avoid-break";
+    const card=document.createElement("div"); card.className="print-card avoid-break";
     const h=document.createElement("div");
     h.innerHTML = `<b>${i+1}. ${o.champ} — ${o.apsa}</b> • <span class="muted">${new Date(o.date).toLocaleString()}</span>`;
     const who=document.createElement("div"); who.className="muted";
@@ -394,38 +405,44 @@ function renderBilan(){
 document.addEventListener("DOMContentLoaded", ()=>{
   load();
 
-  document.getElementById("btnHelp").onclick = ()=> alert("1) Choisis CA/APSA et le contexte • 2) Règle tes observables • 3) Observe (+/-, 4 niveaux) • 4) Bilan → Export PDF (impression iPad).");
-  document.getElementById("btnHardReset").onclick = hardReset;
+  // Header buttons
+  $("btnHelp").onclick = ()=> alert("1) Choisis CA/APSA et le contexte • 2) Règle tes observables • 3) Observe (+/-, 4 niveaux) • 4) Bilan → Export PDF (impression iPad).");
+  $("btnHardReset").onclick = hardReset;
 
-  document.getElementById("goSetup").onclick = ()=> show("choose");
+  // nav cover -> choose
+  $("goSetup").onclick = ()=> show("choose");
 
-  document.getElementById("obsInput").addEventListener("keydown",(e)=>{
+  // chips inputs
+  $("obsInput").addEventListener("keydown",(e)=>{
     if(["Enter",",",";"].includes(e.key)){
       e.preventDefault();
-      const arr = document.getElementById("obsInput").value.replace(/\\r\\n?/g,"\\n").split(/[ ,;\\n]+/).map(s=>s.trim()).filter(Boolean);
-      app.observers = Array.from(new Set([...(app.observers||[]), ...arr])); document.getElementById("obsInput").value=""; save(); renderChoose();
+      const arr = $("obsInput").value.replace(/\r\n?/g,"\n").split(/[ ,;\n]+/).map(s=>s.trim()).filter(Boolean);
+      app.observers = Array.from(new Set([...(app.observers||[]), ...arr])); $("obsInput").value=""; save(); renderChoose();
     }
   });
-  document.getElementById("grpInput").addEventListener("keydown",(e)=>{
+  $("grpInput").addEventListener("keydown",(e)=>{
     if(["Enter",",",";"].includes(e.key)){
       e.preventDefault();
-      const arr = document.getElementById("grpInput").value.replace(/\\r\\n?/g,"\\n").split(/[ ,;\\n]+/).map(s=>s.trim()).filter(Boolean);
-      app.group = Array.from(new Set([...(app.group||[]), ...arr])); document.getElementById("grpInput").value=""; save(); renderChoose();
+      const arr = $("grpInput").value.replace(/\r\n?/g,"\n").split(/[ ,;\n]+/).map(s=>s.trim()).filter(Boolean);
+      app.group = Array.from(new Set([...(app.group||[]), ...arr])); $("grpInput").value=""; save(); renderChoose();
     }
   });
 
-  document.getElementById("toObservables").onclick = ()=>{
+  // choose actions
+  $("toObservables").onclick = ()=>{
     if(!app.selected.apsa){ alert("Choisis d'abord un champ et une APSA."); return; }
     renderObservables(); show("observables");
   };
-  document.getElementById("backChoose").onclick = ()=> show("choose");
+  $("backChoose").onclick = ()=> show("choose");
 
-  document.getElementById("btnAddObs").onclick = ()=>{
-    const v = document.getElementById("newObs").value.trim(); if(!v) return;
-    app.observables.push({text:v,pos:0,neg:0,level:"moyen"}); document.getElementById("newObs").value=""; save(); renderObservables();
+  // observables add
+  $("btnAddObs").onclick = ()=>{
+    const v = $("newObs").value.trim(); if(!v) return;
+    app.observables.push({text:v,pos:0,neg:0,level:"moyen"}); $("newObs").value=""; save(); renderObservables();
   };
 
-  document.getElementById("startObserve").onclick = ()=>{
+  // start observation
+  $("startObserve").onclick = ()=>{
     const items = app.observables.map(o=>({text:o.text, pos:0, neg:0, level:"moyen"}));
     app.current = {
       id: Math.random().toString(36).slice(2),
@@ -437,15 +454,17 @@ document.addEventListener("DOMContentLoaded", ()=>{
     save(); renderObserve(); show("observe");
   };
 
-  document.getElementById("obBack").onclick = ()=> show("observables");
-  document.getElementById("obAdd").onclick = ()=>{
+  // observe
+  $("obBack").onclick = ()=> show("observables");
+  $("obAdd").onclick = ()=>{
     const v = prompt("Nom de l'observable à ajouter :"); if(!v) return;
     const it={text:v,pos:0,neg:0,level:"moyen"};
     app.current.items.push(it);
+    // l'ajouter aussi comme défaut pour la prochaine fois
     app.observables.push({text:v,pos:0,neg:0,level:"moyen"});
     save(); renderObserve();
   };
-  document.getElementById("obToBilan").onclick = ()=>{
+  $("obToBilan").onclick = ()=>{
     if(app.current){
       app.observations.unshift(JSON.parse(JSON.stringify(app.current)));
       app.current = null; save();
@@ -453,9 +472,11 @@ document.addEventListener("DOMContentLoaded", ()=>{
     renderBilan(); show("bilan");
   };
 
-  document.getElementById("bilanBack").onclick = ()=> show("observe");
-  document.getElementById("bilanExportPDF").onclick = ()=> window.print();
+  // bilan
+  $("bilanBack").onclick = ()=> show("observe");
+  $("bilanExportPDF").onclick = ()=> window.print();
 
+  // initial
   renderChoose(); show("cover");
 });
 
