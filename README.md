@@ -1,37 +1,28 @@
-# EPS Observer
+# EPS Observer — Page unique (A+C)
 
-Application web (single-file) pour observer des activités en EPS, conçue pour fonctionner **entièrement côté client** (localStorage) — adapté aux iPads gérés par MDM / liste blanche.
+Cette version implémente **la page d’observation unique** optimisée iPad, avec **boutons ronds géants** *et* **gestuelle swipe** (→ = +, ← = -).
 
-## Fonctionnalités
-- Choix du champ d'apprentissage (CA1..CA5) — données basées sur le document officiel fourni. fileciteturn0file0
-- Sélection / création d'APSA.
-- Observables par APSA (par défaut) + possibilité d'ajouter des observables personnalisés.
-- Observation en mode élève : 4 niveaux de maîtrise (fragile/moyen/bon/tb) + comptage des actions positives (+) et négatives (-) par observable.
-- Enregistrement local (localStorage). Export JSON par observation.
-- Export PDF possible (prévoir bundling de `html2canvas` et `jspdf` dans `/vendor` pour environnement MDM sans accès CDN).
+## Points clés
+- **Une seule page** avec 3 zones : Contexte (haut), Observables (milieu), Maîtrise (bas).
+- Comptage **+ / -** via **buzzer** (60px) **et** **swipe** horizontal sur la ligne.
+- **4 niveaux de maîtrise** par observable (🔴/🟡/🟢/🔵) sans quitter la ligne.
+- **PDF uniquement** : bouton *Générer PDF* s’appuie sur l’**impression native** iPad (feuille de bilan compacte).
+- **LocalStorage** uniquement (aucune donnée envoyée). Sessions sauvegardées listées en bas.
+- **Hors-ligne / MDM** : fichier unique `index.html`, aucune dépendance externe.
 
-## Déploiement sur iPad géré par MDM (sans hébergement externe)
-Options possibles :
-1. **Distribuer l'app en tant que site local (web clip)** : héberger `index.html` et autres fichiers dans le dépôt GitHub, puis l'admin MDM pousse le site en Web Clip ou héberge en intranet accessible uniquement par le réseau de l'établissement.
-2. **Distribuer les fichiers statiques et ouvrir `index.html` localement** : certains MDM permettent de pousser des fichiers et raccourcis vers Safari ou Files.app. Les iPads ouvriront l'index en local (file://) — vérifier politique MDM.
-3. **Vendoriser les dépendances** : éviter les CDN. Place les fichiers `html2canvas.min.js` et `jspdf.umd.min.js` dans `/vendor` et modifie `index.html` pour charger depuis `./vendor/...`.
-
-## Structure du dépôt
-```
-eps-observer/
-├─ index.html
-├─ README.md
-├─ vendor/          # place ici les bibliothèques html2canvas + jspdf pour usage offline
-└─ LICENSE
-```
-
-## Respect de la confidentialité
-L'application stocke tout localement dans le navigateur (localStorage). Aucune donnée n'est envoyée vers un service distant. Cela convient aux iPads en MDM et à des exigences de confidentialité strictes.
-
-## Next steps (je peux générer / intégrer)
-- Ajouter sauvegarde CSV / export groupé.
-- Ajouter fonctionnalité d'association enseignant <-> observations (si tu changes d'avis).
-- Fournir une version "packagée" (PWA) avec icône et manifest pour installer sur l'écran d'accueil iPad.
+## Utilisation
+1. Ouvrir `index.html` sur iPad (Web Clip MDM, intranet, ou fichier local selon politique).
+2. Renseigner le **contexte**, **ajouter/retirer** des observables si besoin.
+3. Pendant l’observation : tap **+** ou swipe **→** ; tap **-** ou swipe **←**.
+4. Sélectionner les **niveaux de maîtrise**.
+5. **Générer PDF** pour obtenir la trace (via impression en PDF).
 
 ## Source des APSA et champs
-Les APSA et la catégorisation par champ proviennent du document officiel (programme EPS — classes de seconde et cycle terminal) que tu as fourni. fileciteturn0file0
+Les APSA / champs proviennent du document officiel que tu as fourni précédemment, et un sous-ensemble est préchargé dans l'app. 
+
+## Différences vs version précédente
+- Passage d'un **wizard multi-sections** à une **page unique**.
+- Export **PDF natif** (plus de dépendance `html2canvas/jsPDF`).
+
+## Licence
+Voir `LICENSE` (fichier inchangé).

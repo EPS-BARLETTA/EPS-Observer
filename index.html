@@ -2,336 +2,403 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <title>EPS Observer</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EPS Observer — Page unique</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <style>
-    :root{--bg:#f6f8fb;--card:#fff;--text:#0f172a;--muted:#6b7280;--border:#e5e7eb;--green:#16a34a;--red:#ef4444;--amber:#f59e0b;--blue:#2563eb;--shadow:0 2px 12px rgba(15,23,42,.06);}
-    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,Segoe UI,Roboto}
-    .app{min-height:100vh;display:flex;flex-direction:column}
-    .header{background:#fff;border-bottom:1px solid var(--border);padding:10px 16px;display:flex;gap:8px;align-items:center;justify-content:space-between;box-shadow:var(--shadow)}
-    .btn{border:0;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700}
-    .btn-green{background:var(--green);color:#fff}.btn-blue{background:var(--blue);color:#fff}.btn-gray{background:#e5e7eb}
-    .main{flex:1;padding:16px}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;box-shadow:var(--shadow);margin-bottom:12px}
+    :root{
+      --bg:#F4F6F8;
+      --card:#fff;
+      --text:#0f172a;
+      --muted:#475569;
+      --border:#e5e7eb;
+      --green:#16a34a;
+      --red:#ef4444;
+      --amber:#f59e0b;
+      --blue:#2563eb;
+      --shadow:0 2px 12px rgba(15,23,42,.06);
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial}
+    .app{min-height:100%;display:flex;flex-direction:column}
+    .header{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--border);padding:10px 14px;display:flex;gap:8px;align-items:center;justify-content:space-between;box-shadow:var(--shadow)}
+    .brand{font-weight:800}
+    .btn{border:0;border-radius:16px;padding:12px 16px;cursor:pointer;font-weight:800;font-size:16px}
+    .btn:active{transform:scale(.98)}
+    .btn-green{background:var(--green);color:#fff}
+    .btn-blue{background:var(--blue);color:#fff}
+    .btn-gray{background:#e5e7eb}
+    .btn-red{background:var(--red);color:#fff}
+    .btn-ghost{background:transparent;border:1px solid var(--border)}
+    .main{flex:1;display:flex;flex-direction:column;gap:12px;padding:12px;max-width:980px;margin:0 auto}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:12px;box-shadow:var(--shadow)}
+    .muted{color:var(--muted);font-size:14px}
     .row{display:flex;gap:10px;flex-wrap:wrap}
-    .chip{background:#eef2ff;padding:6px 10px;border-radius:999px}
-    input,textarea,select{padding:8px;border-radius:8px;border:1px solid var(--border);width:100%}
-    .muted{color:var(--muted);font-size:13px}
-    .obs-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
-    .obs-item{display:flex;gap:8px;align-items:center;border:1px solid var(--border);padding:8px;border-radius:10px;background:#fff}
-    .count{min-width:44px;text-align:center;border-radius:8px;padding:6px 8px;border:1px solid var(--border)}
-    .cover{display:flex;flex-direction:column;align-items:center;justify-content:center;height:50vh;text-align:center}
+    label{font-weight:700;font-size:14px}
+    input,select{padding:10px;border-radius:12px;border:1px solid var(--border);width:100%;font-size:16px;background:#fff}
+    .grid{display:grid;gap:10px}
+    .grid-2{grid-template-columns:1fr 1fr}
+    .grid-3{grid-template-columns:1fr 1fr 1fr}
+    @media (max-width:720px){.grid-2,.grid-3{grid-template-columns:1fr}}
+    /* Zones */
+    .zone{padding:8px}
+    .zone-title{font-weight:900;margin:0 0 6px 0;font-size:16px;letter-spacing:.2px}
+    /* Observables list */
+    .obs{display:flex;flex-direction:column;gap:10px}
+    .obs-item{display:grid;grid-template-columns:1fr auto auto auto auto;gap:8px;align-items:center;border:1px solid var(--border);padding:10px;border-radius:16px;background:#fff;touch-action:pan-y}
+    .obs-name{font-weight:700;font-size:18px}
+    .count{min-width:54px;text-align:center;border-radius:12px;padding:10px;border:1px solid var(--border);font-weight:800;font-size:18px}
+    .buzzer{width:60px;height:60px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:28px}
+    .buzzer:active{transform:scale(.96)}
+    /* Mastery bar */
+    .mastery{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+    .m-chip{border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center;font-weight:800;cursor:pointer}
+    .m-chip[data-v="fragile"]{background:#fee2e2}
+    .m-chip[data-v="moyen"]{background:#fef9c3}
+    .m-chip[data-v="bon"]{background:#dcfce7}
+    .m-chip[data-v="tb"]{background:#dbeafe}
+    .m-chip.active{outline:2px solid var(--blue)}
+    /* Print sheet */
+    @media print{
+      .header, #actions, #help {display:none !important}
+      body{background:#fff}
+      .card{box-shadow:none;border:0;padding:0}
+      .obs-item{border:1px solid #ddd}
+    }
   </style>
 </head>
 <body>
 <div class="app">
   <header class="header">
-    <div><strong>EPS Observer</strong></div>
+    <div class="brand">EPS Observer</div>
     <div class="row">
-      <button class="btn btn-gray" id="btnHelp">❓ Aide</button>
-      <button class="btn btn-blue" id="btnExport">📄 Export (PDF)</button>
+      <button class="btn btn-gray" id="help">❓ Aide</button>
+      <button class="btn btn-blue" id="btnPdf">📄 Générer PDF</button>
     </div>
   </header>
 
   <main class="main">
-    <section class="card cover" id="cover">
-      <h1>EPS Observer</h1>
-      <p class="muted">Observer • Ajouter des observables • Compter actions positives/négatives</p>
-      <div style="margin-top:12px">
-        <button class="btn btn-green" id="startBtn">Commencer</button>
-      </div>
-    </section>
-
-    <section class="card hidden" id="page-choose">
-      <h2>1) Choisis le champ d'apprentissage</h2>
-      <div id="champs" class="row" style="margin-top:8px"></div>
-    </section>
-
-    <section class="card hidden" id="page-apsa">
-      <h2>2) Choisis l'APSA</h2>
-      <div id="apsas" class="row" style="margin-top:8px"></div>
-      <div style="margin-top:8px">
-        <input id="newApsaName" placeholder="Ajouter une APSA personnalisée (ex: Ultimate)"/>
-        <button class="btn btn-blue" id="addApsaBtn" style="margin-top:8px">➕ Ajouter APSA</button>
-      </div>
-    </section>
-
-    <section class="card hidden" id="page-observables">
-      <h2>3) Observables - sélection & personnalisation</h2>
-      <div class="row" style="gap:12px">
-        <div style="flex:1">
-          <label class="muted">Observables proposées</label>
-          <div id="defaultObs" class="obs-list"></div>
+    <!-- 🟥 Haut : Contexte -->
+    <section class="card zone" id="zone-top">
+      <p class="zone-title">Contexte</p>
+      <div class="grid grid-3">
+        <div>
+          <label>Champ d'apprentissage</label>
+          <select id="champ"></select>
         </div>
-        <div style="flex:1">
-          <label class="muted">Observables personnalisés</label>
-          <div id="customObs" class="obs-list"></div>
-          <div style="margin-top:8px">
-            <input id="newObsText" placeholder="Ex: Passe réussie"/>
-            <div style="margin-top:6px" class="muted">Quand un élève observe, il peut marquer + pour positif, - pour négatif.</div>
-            <button class="btn btn-green" id="addObsBtn" style="margin-top:8px">➕ Ajouter observable</button>
+        <div>
+          <label>APSA</label>
+          <select id="apsa"></select>
+        </div>
+        <div>
+          <label>Observateur·rice</label>
+          <input id="observer" placeholder="Prénom" />
+        </div>
+      </div>
+      <div class="grid grid-2" style="margin-top:8px">
+        <div>
+          <label>Groupe (prénoms, séparés par virgules)</label>
+          <input id="group" placeholder="ex : Alice, Bob" />
+        </div>
+        <div>
+          <label>Chrono (option)</label>
+          <div class="row">
+            <button class="btn btn-ghost" id="chronoStart">▶️ Start</button>
+            <button class="btn btn-ghost" id="chronoStop">⏸️ Stop</button>
+            <button class="btn btn-ghost" id="chronoReset">↩︎ Reset</button>
+            <span id="chrono" class="muted" aria-live="polite">00:00</span>
           </div>
         </div>
       </div>
-      <div style="margin-top:12px" class="row">
-        <button class="btn btn-gray" id="backToApsa">⬅️ Retour APSA</button>
-        <button class="btn btn-green" id="goObserv">▶️ Démarrer observation</button>
-      </div>
     </section>
 
-    <section class="card hidden" id="page-observe">
-      <h2>Observation</h2>
-      <div class="muted">Mode élève — 4 niveaux de maîtrise : 🔴 Fragile • 🟡 Moyen • 🟢 Bon • 🟦 Très bon</div>
-      <div style="margin-top:8px">
-        <label>Nom de l'observateur·rice</label>
-        <input id="observerName" placeholder="Prénom"/>
-        <label style="margin-top:8px">Groupe observé (prénoms séparés par virgule)</label>
-        <input id="groupNames" placeholder="ex : Alice, Bob"/>
+    <!-- 🟨 Milieu : Observables -->
+    <section class="card zone" id="zone-middle">
+      <p class="zone-title">Observables (tap = + / swipe ← →)</p>
+      <div class="row" style="align-items:flex-end">
+        <div style="flex:1">
+          <input id="newObs" placeholder="Ajouter un observable (ex : Passe réussie)">
+        </div>
+        <button class="btn btn-green" id="addObs">➕ Ajouter</button>
       </div>
-
-      <div id="obsArea" style="margin-top:12px"></div>
-
-      <div style="margin-top:12px" class="row">
-        <button class="btn btn-gray" id="backToObsConfig">⬅️ Retour</button>
-        <button class="btn btn-blue" id="saveObservation">💾 Enregistrer l'observation</button>
-      </div>
+      <div id="obsList" class="obs" style="margin-top:10px"></div>
     </section>
 
-    <section class="card hidden" id="page-review">
-      <h2>Bilan & récupération</h2>
+    <!-- 🟩 Bas : Niveaux de Maîtrise -->
+    <section class="card zone" id="zone-bottom">
+      <p class="zone-title">Niveaux de maîtrise (par observable)</p>
+      <div id="masteryArea" class="grid"></div>
+    </section>
+
+    <section class="card" id="actions">
+      <div class="row">
+        <button class="btn btn-gray" id="clearAll">🧹 Réinitialiser</button>
+        <button class="btn btn-blue" id="saveSnap">💾 Enregistrer la session</button>
+      </div>
+      <p class="muted">Données stockées localement. Aucun envoi serveur.</p>
+    </section>
+
+    <section class="card" id="savedArea">
+      <h3>Sessions enregistrées</h3>
       <div id="savedList"></div>
-      <div style="margin-top:8px" class="muted">Tu peux exporter en PDF (bouton en haut) ou récupérer le JSON en local.</div>
-    </section>
-
-    <section class="card" id="footer-note">
-      <div class="muted">Basé sur le programme officiel (liste d'activités par champ incluse). Voir README.</div>
     </section>
   </main>
 </div>
 
-<!-- Simple modals -->
-<div id="helpModal" class="card hidden" style="position:fixed;right:16px;top:70px;width:320px">
+<!-- Help modal (very simple) -->
+<dialog id="helpDlg">
   <h3>Aide rapide</h3>
   <ul>
-    <li>Choisis un champ → une APSA → sélectionne ou ajoute des observables.</li>
-    <li>En observation : marque + ou - sur chaque observable pour compter actions.</li>
-    <li>Chaque observateur garde ses enregistrements en local (fichier JSON via export).</li>
+    <li>Reste sur <b>une seule page</b>. Tout se fait ici.</li>
+    <li>Appuie sur <b>+</b> (ou <b>swipe →</b>) pour comptabiliser un succès, sur <b>-</b> (ou <b>swipe ←</b>) pour un échec.</li>
+    <li>Choisis un <b>niveau de maîtrise</b> pour chaque observable.</li>
+    <li>Utilise <b>Générer PDF</b> pour la trace pédagogique (utilise l'impression PDF native d'iPad).</li>
   </ul>
-  <button class="btn btn-gray" id="closeHelp">Fermer</button>
-</div>
+  <form method="dialog"><button class="btn btn-blue">OK</button></form>
+</dialog>
 
 <script>
-/* ===== Données initiales (extraites du document officiel fourni) =====
-   Source: document fourni par l'utilisateur (liste d'APSA / champs). 
-   Voir README et citation du document. */
+// ===== Données officielles (extrait minimal) =====
 const SPORTS_DATA = {
   CA1: { code:"CA1", nom:"Réaliser une performance motrice mesurable", apsas:[
     {id:"athle", nom:"Athlétisme", observables:["Vitesse", "Endurance", "Qualité technique"]},
     {id:"nat_vit", nom:"Natation de vitesse", observables:["Départ", "Technique de nage", "Virage"]},
-    {id:"combiné", nom:"Combiné athlétique", observables:["Transitions", "Puissance"]}
   ]},
   CA2: { code:"CA2", nom:"Adapter ses déplacements", apsas:[
     {id:"escalade", nom:"Escalade", observables:["Choix de trajectoire","Appuis","Prises"]},
-    {id:"orientation", nom:"Course d'orientation", observables:["Lecture de carte","Choix d'itinéraire","Efficacité"]}
-  ]},
-  CA3: { code:"CA3", nom:"Réaliser une prestation corporelle", apsas:[
-    {id:"acrosport", nom:"Acrosport", observables:["Tenue","Sécurité","Esthétique"]},
-    {id:"danse", nom:"Danse", observables:["Expression","Rythme","Cohérence"]}
   ]},
   CA4: { code:"CA4", nom:"Conduire un affrontement", apsas:[
     {id:"basket", nom:"Basket-ball", observables:["Passe","Défense","Proposition d'attaque"]},
-    {id:"ultimate", nom:"Ultimate (exemple)", observables:["Passe réussie","Passe perdue","Marque"]}
+    {id:"ultimate", nom:"Ultimate", observables:["Passe réussie","Passe perdue","Jeu dans l'axe","Disponibilité"]},
   ]},
-  CA5: { code:"CA5", nom:"Développer ses ressources et s'entretenir", apsas:[
-    {id:"muscu", nom:"Musculation", observables:["Posture","Sécurité","Progression"]},
-    {id:"course_duree", nom:"Course en durée", observables:["Gestion de l'effort","Régularité","Récupération"]}
-  ]}
 };
 
-/* ===== App state (localStorage) ===== */
-const STORAGE_KEY = "eps_observer_v1";
-let app = { saved: [] };
-
-function load(){
-  try{ const raw=localStorage.getItem(STORAGE_KEY); if(raw) app = JSON.parse(raw); }
-  catch(e){ app = { saved: [] }; }
-}
-function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(app)); }
-
-/* ===== UI helpers ===== */
-const $ = id => document.getElementById(id);
-function show(id){ document.querySelectorAll('section.card, #helpModal').forEach(s=>s.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
-function el(tag,props={}, children=[]){ const e=document.createElement(tag); Object.assign(e,props); (children||[]).forEach(c=>typeof c==='string'? e.appendChild(document.createTextNode(c)) : e.appendChild(c)); return e; }
-
-/* ===== Render choices ===== */
-function renderChamps(){
-  const container = $('champs'); container.innerHTML='';
-  Object.values(SPORTS_DATA).forEach(c=>{
-    const b = el('button',{className:'btn btn-gray'},[`${c.code} • ${c.nom}`]);
-    b.onclick = ()=>{ selectChamp(c.code); };
-    container.appendChild(b);
-  });
-}
-
-let current = { champ:null, apsa:null, observables: [] };
-
-function selectChamp(code){
-  current.champ = SPORTS_DATA[code];
-  renderApsas();
-  show('page-apsa');
-}
-
-function renderApsas(){
-  const container = $('apsas'); container.innerHTML='';
-  (current.champ.apsas||[]).forEach(a=>{
-    const b = el('button',{className:'btn btn-gray'},[a.nom]);
-    b.onclick = ()=>{ selectApsa(a); };
-    container.appendChild(b);
-  });
-}
-
-/* Add custom APSA */
-$('addApsaBtn').onclick = ()=>{
-  const name = $('newApsaName').value.trim();
-  if(!name) return alert("Nom APSA vide");
-  const id = 'apsa_'+Date.now();
-  const a = {id, nom:name, observables:[]};
-  current.champ.apsas.push(a);
-  $('newApsaName').value='';
-  renderApsas();
-  selectApsa(a);
+// ===== Etat & stockage local =====
+const STORAGE_KEY = "eps_observer_page_unique_v1";
+let state = {
+  champ: "CA4",
+  apsa: "ultimate",
+  observer: "",
+  group: "",
+  observables: [], // {id, text, pos, neg, mastery}
+  saved: [],
 };
+function load(){ try{ const raw = localStorage.getItem(STORAGE_KEY); if(raw) state = JSON.parse(raw); }catch(e){} }
+function persist(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
-function selectApsa(a){
-  current.apsa = a;
-  // preload observables (copy)
-  current.observables = (a.observables||[]).map(o=>({text:o, pos:0, neg:0, mastery:'moyen'}));
-  renderObservables();
-  show('page-observables');
-}
+// ===== Utilitaires DOM =====
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => [...document.querySelectorAll(sel)];
+function el(tag, props={}, children=[]){ const e=document.createElement(tag); Object.assign(e, props); (children||[]).forEach(c=> e.append(c.nodeType?c:document.createTextNode(c))); return e; }
+function uid(){ return Math.random().toString(36).slice(2); }
 
-/* Observables UI */
-function renderObservables(){
-  const d = $('defaultObs'); const c = $('customObs');
-  d.innerHTML=''; c.innerHTML='';
-  current.observables.forEach((obs, idx)=>{
-    const item = el('div',{className:'obs-item'},[]);
-    const txt = el('div',{},[obs.text]);
-    const plus = el('button',{className:'btn btn-green'},['+']);
-    const minus = el('button',{className:'btn btn-red'},['-']);
-    const posCount = el('div',{className:'count'},[String(obs.pos)]);
-    const negCount = el('div',{className:'count'},[String(obs.neg)]);
-    const mastery = el('select',{},[]); ['fragile','moyen','bon','tb'].forEach(v=>{
-      const opt = el('option',{value:v},[v]); if(v===obs.mastery) opt.selected=true; mastery.appendChild(opt);
-    });
-    plus.onclick = ()=>{ obs.pos++; posCount.textContent=obs.pos; };
-    minus.onclick = ()=>{ obs.neg++; negCount.textContent=obs.neg; };
-    mastery.onchange = ()=>{ obs.mastery = mastery.value; };
-    const del = el('button',{className:'btn btn-gray'},['🗑️']);
-    del.onclick = ()=>{ current.observables.splice(idx,1); renderObservables(); };
-    item.appendChild(txt); item.appendChild(mastery); item.appendChild(plus); item.appendChild(posCount); item.appendChild(minus); item.appendChild(negCount); item.appendChild(del);
-    d.appendChild(item);
+// ===== Initialisation des menus =====
+function initSelectors(){
+  const champSel = $("#champ");
+  champSel.innerHTML = "";
+  Object.values(SPORTS_DATA).forEach(c => {
+    const opt = el("option", {value: c.code}, [c.code + " • " + c.nom]);
+    champSel.append(opt);
   });
+  champSel.value = state.champ;
+  champSel.onchange = () => { state.champ = champSel.value; buildApsa(); persist(); };
+
+  buildApsa();
 }
-
-/* add custom observable */
-$('addObsBtn').onclick = ()=>{
-  const t = $('newObsText').value.trim(); if(!t) return;
-  current.observables.push({text:t,pos:0,neg:0,mastery:'moyen'});
-  $('newObsText').value='';
-  renderObservables();
-};
-
-/* Navigation */
-$('startBtn').onclick = ()=>{ renderChamps(); show('page-choose'); };
-$('backToApsa').onclick = ()=> show('page-apsa');
-$('goObserv').onclick = ()=> { renderObservePage(); show('page-observe'); };
-
-/* Observation page rendering */
-function renderObservePage(){
-  const area = $('obsArea'); area.innerHTML='';
-  const list = current.observables;
-  if(!list.length) area.appendChild(el('div',{},['Aucun observable sélectionné']));
-  list.forEach((o,idx)=>{
-    const row = el('div',{className:'obs-item'},[]);
-    row.appendChild(el('div',{},[o.text]));
-    // 4 mastery radio
-    const radios = el('div',{},[]);
-    ['fragile','moyen','bon','tb'].forEach(v=>{
-      const b = el('button',{className:'btn btn-gray'},[v]);
-      b.onclick = ()=>{ o.mastery=v; renderObservePage(); };
-      if(o.mastery===v) b.className='btn btn-blue';
-      radios.appendChild(b);
-    });
-    row.appendChild(radios);
-    // + / - counters
-    const plus = el('button',{className:'btn btn-green'},['+']);
-    const minus = el('button',{className:'btn btn-red'},['-']);
-    const pos = el('div',{className:'count'},[String(o.pos)]);
-    const neg = el('div',{className:'count'},[String(o.neg)]);
-    plus.onclick = ()=>{ o.pos++; pos.textContent=o.pos; };
-    minus.onclick = ()=>{ o.neg++; neg.textContent=o.neg; };
-    row.appendChild(plus); row.appendChild(pos); row.appendChild(minus); row.appendChild(neg);
-    area.appendChild(row);
-  });
-  // observer name and group prefilled by user if present
-  $('observerName').value = $('observerName').value || '';
-  $('groupNames').value = $('groupNames').value || '';
-}
-
-/* Save observation */
-$('saveObservation').onclick = ()=>{
-  const obsName = $('observerName').value.trim();
-  if(!obsName) return alert("Renseigne le nom de l'observateur·rice.");
-  const entry = {
-    id: 'obs_'+Date.now(),
-    date: new Date().toISOString(),
-    observer: obsName,
-    group: $('groupNames').value.split(/[;,]+/).map(s=>s.trim()).filter(Boolean),
-    champ: current.champ.code,
-    apsa: current.apsa.nom,
-    observables: JSON.parse(JSON.stringify(current.observables))
+function buildApsa(){
+  const apsaSel = $("#apsa");
+  apsaSel.innerHTML = "";
+  const list = SPORTS_DATA[state.champ].apsas || [];
+  list.forEach(a => { apsaSel.append(el("option", {value:a.id}, [a.nom])); });
+  apsaSel.value = state.apsa = (list.find(a=>a.id===state.apsa)?.id || list[0]?.id || "");
+  apsaSel.onchange = () => { state.apsa = apsaSel.value; // propose defaults
+    const a = SPORTS_DATA[state.champ].apsas.find(x=>x.id===state.apsa);
+    if(a){ state.observables = a.observables.map(t => ({id:uid(), text:t, pos:0, neg:0, mastery:"moyen"})); renderObs(); }
+    persist();
   };
-  app.saved.push(entry); save(); alert("Observation enregistrée localement."); renderSavedList(); show('page-review');
-};
+}
 
-/* render saved */
-function renderSavedList(){
-  const container = $('savedList'); container.innerHTML='';
-  if(!app.saved.length) container.appendChild(el('div',{},['Aucune observation enregistrée']));
-  app.saved.forEach(s=>{
-    const card = el('div',{className:'card'},[]);
-    card.appendChild(el('div',{},[`# ${s.id} — ${s.apsa} — ${new Date(s.date).toLocaleString()}`]));
-    card.appendChild(el('div',{},[`Observateur: ${s.observer} • Groupe: ${s.group.join(', ')}`]));
-    const ul = el('div',{},[]);
-    s.observables.forEach(o=>{
-      ul.appendChild(el('div',{},[`${o.text} — +:${o.pos} / -:${o.neg} — niveau:${o.mastery}`]));
-    });
-    card.appendChild(ul);
-    const btn = el('button',{className:'btn btn-blue'},['Télécharger JSON']);
-    btn.onclick = ()=>{ downloadJSON(s, s.id+'.json'); };
-    card.appendChild(btn);
-    container.appendChild(card);
+// ===== Observables (A+C : boutons ronds + swipe) =====
+function addObservable(text){
+  state.observables.push({id: uid(), text, pos:0, neg:0, mastery:"moyen"});
+  persist(); renderObs();
+}
+function removeObservable(id){
+  state.observables = state.observables.filter(o=>o.id!==id);
+  persist(); renderObs();
+}
+function renderObs(){
+  const list = $("#obsList"); list.innerHTML = "";
+  const masteryArea = $("#masteryArea"); masteryArea.innerHTML = "";
+
+  state.observables.forEach(o => {
+    // Ligne observables : nom + mastery mini + + count - count (swipe support)
+    const row = el("div", {className:"obs-item", "data-id": o.id});
+    const name = el("div", {className:"obs-name"}, [o.text]);
+    const msel = miniMastery(o);
+    const plusBtn = el("button", {className:"btn buzzer btn-green", "aria-label":"ajouter +1"}, ["+"]);
+    const pos = el("div", {className:"count"}, [String(o.pos)]);
+    const minusBtn = el("button", {className:"btn buzzer btn-red", "aria-label":"retirer -1"}, ["-"]);
+    const neg = el("div", {className:"count"}, [String(o.neg)]);
+
+    plusBtn.onclick = () => { o.pos++; pos.textContent=o.pos; persist(); };
+    minusBtn.onclick = () => { o.neg++; neg.textContent=o.neg; persist(); };
+
+    // Swipe gestures (← = -, → = +)
+    let sx=null, sy=null, moved=false;
+    row.addEventListener("touchstart", (e)=>{ const t=e.changedTouches[0]; sx=t.clientX; sy=t.clientY; moved=false; }, {passive:true});
+    row.addEventListener("touchmove", ()=>{ moved=true; }, {passive:true});
+    row.addEventListener("touchend", (e)=>{
+      if(sx==null) return;
+      const t=e.changedTouches[0]; const dx=t.clientX - sx; const dy=t.clientY - sy;
+      if(Math.abs(dx) > 30 && Math.abs(dy) < 40){ // horizontal swipe
+        if(dx>0){ o.pos++; pos.textContent=o.pos; }
+        else{ o.neg++; neg.textContent=o.neg; }
+        persist();
+      }
+      sx=sy=null;moved=false;
+    }, {passive:true});
+
+    row.append(name, msel, plusBtn, pos, minusBtn, neg);
+    list.append(row);
+
+    // Zone maîtrise complète
+    masteryArea.append(fullMastery(o));
   });
 }
-
-/* Download helper */
-function downloadJSON(obj, filename){
-  const blob = new Blob([JSON.stringify(obj, null, 2)], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
+function miniMastery(o){
+  const wrap = el("div", {className:"row"});
+  ["fragile","moyen","bon","tb"].forEach(v=>{
+    const b = el("button", {className: "btn btn-ghost" + (o.mastery===v ? " btn-blue":"")}, [v]);
+    b.onclick = () => { o.mastery=v; renderObs(); persist(); };
+    wrap.append(b);
+  });
+  return wrap;
+}
+function fullMastery(o){
+  const card = el("div", {className:"card"});
+  card.append(el("div", {style:"font-weight:900;margin-bottom:6px"}, [o.text]));
+  const bar = el("div", {className:"mastery"});
+  [["fragile","🔴 Fragile"],["moyen","🟡 Moyen"],["bon","🟢 Bon"],["tb","🔵 Très Bon"]].forEach(([v,label])=>{
+    const chip = el("div", {className:"m-chip"+(o.mastery===v?" active":""), "data-v":v});
+    chip.textContent = label;
+    chip.onclick = () => { o.mastery=v; renderObs(); persist(); };
+    bar.append(chip);
+  });
+  card.append(bar);
+  return card;
 }
 
-/* Export PDF note: we include instructions in README to vendor html2canvas + jspdf locally for offline MDM deployments */
-$('btnExport').onclick = ()=>{ alert("Utilise le bouton Export PDF après avoir vendorisé html2canvas + jspdf dans /vendor. Voir README."); };
+// ===== Sauvegarde / Sessions =====
+function renderSaved(){
+  const box = $("#savedList"); box.innerHTML="";
+  if(!state.saved.length){ box.append(el("div", {}, ["Aucune session enregistrée"])); return; }
+  state.saved.forEach(s=>{
+    const c = el("div", {className:"card"});
+    c.append(el("div", {}, [`#${s.id} — ${s.context.apsaName} — ${new Date(s.date).toLocaleString()}`]));
+    c.append(el("div", {}, [`Observateur: ${s.context.observer} • Groupe: ${s.context.group.join(", ")}`]));
+    s.observables.forEach(o=> c.append(el("div", {className:"muted"}, [`${o.text} — +:${o.pos} / -:${o.neg} — niveau: ${o.mastery}`])));
+    const del = el("button", {className:"btn btn-ghost"}, ["🗑️ Supprimer"]);
+    del.onclick = ()=>{ state.saved = state.saved.filter(x=>x.id!==s.id); persist(); renderSaved(); };
+    c.append(del);
+    box.append(c);
+  });
+}
+$("#saveSnap").onclick = () => {
+  const ctx = getContext();
+  if(!ctx.observer) { alert("Renseigne le nom de l'observateur·rice."); return; }
+  const entry = {
+    id: "sess_"+Date.now(),
+    date: new Date().toISOString(),
+    context: ctx,
+    observables: state.observables.map(o=>({...o})),
+  };
+  state.saved.push(entry); persist(); renderSaved();
+  alert("Session enregistrée localement.");
+};
 
-/* Help modal */
-$('btnHelp').onclick = ()=> $('helpModal').classList.toggle('hidden');
-$('closeHelp').onclick = ()=> $('helpModal').classList.add('hidden');
+// ===== Contexte & chrono =====
+function getContext(){
+  return {
+    champ: $("#champ").value,
+    apsa: $("#apsa").value,
+    apsaName: $("#apsa").selectedOptions[0]?.textContent || "",
+    observer: $("#observer").value.trim(),
+    group: $("#group").value.split(/[;,]+/).map(s=>s.trim()).filter(Boolean),
+    chrono: $("#chrono").textContent
+  };
+}
+let t0=null, tid=null;
+function tick(){
+  const d = (Date.now()-t0)/1000|0; const m = String((d/60)|0).padStart(2,"0"); const s = String(d%60).padStart(2,"0");
+  $("#chrono").textContent = m+":"+s;
+}
+$("#chronoStart").onclick = ()=>{ if(tid) return; t0 = Date.now()-parseInt($("#chrono").textContent.split(":")[0])*60000; tid = setInterval(tick, 250); };
+$("#chronoStop").onclick = ()=>{ clearInterval(tid); tid=null; };
+$("#chronoReset").onclick = ()=>{ $("#chrono").textContent="00:00"; t0=Date.now(); };
 
-/* init */
-load(); renderSavedList();
+// ===== Ajout / suppression observables =====
+$("#addObs").onclick = ()=>{
+  const t = $("#newObs").value.trim();
+  if(!t) return;
+  addObservable(t);
+  $("#newObs").value="";
+};
+
+$("#clearAll").onclick = ()=>{
+  if(confirm("Tout réinitialiser (observables & compteurs) ?")){
+    const a = SPORTS_DATA[state.champ].apsas.find(x=>x.id===state.apsa);
+    state.observables = (a?.observables || []).map(t=>({id:uid(), text:t, pos:0, neg:0, mastery:"moyen"}));
+    persist(); renderObs();
+  }
+};
+
+// ===== PDF (impression native) =====
+$("#btnPdf").onclick = ()=>{
+  // Génère une feuille de bilan compacte avant impression
+  const ctx = getContext();
+  const w = window.open("", "_blank");
+  w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Bilan EPS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto;margin:24px}
+    h1{font-size:20px;margin:0 0 8px 0}
+    table{border-collapse:collapse;width:100%}
+    th,td{border:1px solid #ddd;padding:8px;text-align:left}
+    th{background:#f3f4f6}
+  </style></head><body>`);
+  w.document.write(`<h1>Bilan d'observation — ${ctx.apsaName}</h1>`);
+  w.document.write(`<div><b>Date:</b> ${new Date().toLocaleString()} • <b>Champ:</b> ${ctx.champ} • <b>Observateur:</b> ${ctx.observer}</div>`);
+  w.document.write(`<div><b>Groupe:</b> ${ctx.group.join(", ")} • <b>Chrono:</b> ${ctx.chrono}</div>`);
+  w.document.write(`<table><thead><tr><th>Observable</th><th>+</th><th>-</th><th>Niveau</th></tr></thead><tbody>`);
+  state.observables.forEach(o=>{
+    w.document.write(`<tr><td>${o.text}</td><td>${o.pos}</td><td>${o.neg}</td><td>${o.mastery}</td></tr>`);
+  });
+  w.document.write(`</tbody></table>`);
+  w.document.write(`</body></html>`);
+  w.document.close();
+  w.focus();
+  w.print();
+};
+
+// ===== Aide =====
+$("#help").onclick = ()=> document.getElementById("helpDlg").showModal();
+
+// ===== Boot =====
+load();
+initSelectors();
+// seed defaults if empty
+if(!state.observables.length){
+  const a = SPORTS_DATA[state.champ].apsas.find(x=>x.id===state.apsa);
+  state.observables = (a?.observables || []).map(t=>({id:uid(), text:t, pos:0, neg:0, mastery:"moyen"}));
+}
+$("#observer").value = state.observer || "";
+$("#group").value = state.group || "";
+$("#observer").oninput = e=>{ state.observer = e.target.value; persist(); };
+$("#group").oninput = e=>{ state.group = e.target.value; persist(); };
+renderObs();
+renderSaved();
 </script>
 </body>
 </html>
