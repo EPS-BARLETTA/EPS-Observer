@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>EPS Observer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{--bg:#f6f8fb;--card:#fff;--text:#0f172a;--muted:#6b7280;--border:#e5e7eb;--green:#16a34a;--red:#ef4444;--amber:#f59e0b;--blue:#2563eb;--shadow:0 2px 12px rgba(15,23,42,.06);}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,Segoe UI,Roboto}
+    .app{min-height:100vh;display:flex;flex-direction:column}
+    .header{background:#fff;border-bottom:1px solid var(--border);padding:10px 16px;display:flex;gap:8px;align-items:center;justify-content:space-between;box-shadow:var(--shadow)}
+    .btn{border:0;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700}
+    .btn-green{background:var(--green);color:#fff}.btn-blue{background:var(--blue);color:#fff}.btn-gray{background:#e5e7eb}
+    .main{flex:1;padding:16px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;box-shadow:var(--shadow);margin-bottom:12px}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .chip{background:#eef2ff;padding:6px 10px;border-radius:999px}
+    input,textarea,select{padding:8px;border-radius:8px;border:1px solid var(--border);width:100%}
+    .muted{color:var(--muted);font-size:13px}
+    .obs-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+    .obs-item{display:flex;gap:8px;align-items:center;border:1px solid var(--border);padding:8px;border-radius:10px;background:#fff}
+    .count{min-width:44px;text-align:center;border-radius:8px;padding:6px 8px;border:1px solid var(--border)}
+    .cover{display:flex;flex-direction:column;align-items:center;justify-content:center;height:50vh;text-align:center}
+  
+/* ==== Améliorations responsive & lisibilité ==== */
+@media (max-width: 980px){
+  .obs-item{grid-template-columns:1fr}
+}
+@media (min-width: 981px) and (max-width: 1180px){
+  .obs-item{grid-template-columns:1fr auto}
+}
+.fmb{gap:10px}
+.fmb button{min-width:110px}
+.obs-item{row-gap:10px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div><strong>EPS Observer</strong></div>
+    <div class="row">
+      <button class="btn btn-gray" id="btnHelp">❓ Aide</button>
+      <button class="btn btn-blue" id="btnExport">📄 Export (PDF)</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="card cover" id="cover">
+      <h1>EPS Observer</h1>
+      <p class="muted">Observer • Ajouter des observables • Compter actions positives/négatives</p>
+      <div style="margin-top:12px">
+        <button class="btn btn-green" id="startBtn">Commencer</button>
+      </div>
+    </section>
+
+    <section class="card hidden" id="page-choose">
+      <h2>1) Choisis le champ d'apprentissage</h2>
+      <div id="champs" class="row" style="margin-top:8px"></div>
+    </section>
+
+    <section class="card hidden" id="page-apsa">
+      <h2>2) Choisis l'APSA</h2>
+      <div id="apsas" class="row" style="margin-top:8px"></div>
+      <div style="margin-top:8px">
+        <input id="newApsaName" placeholder="Ajouter une APSA personnalisée (ex: Ultimate)"/>
+        <button class="btn btn-blue" id="addApsaBtn" style="margin-top:8px">➕ Ajouter APSA</button>
+      </div>
+    </section>
+
+    <section class="card hidden" id="page-observables">
+      <h2>3) Observables - sélection & personnalisation</h2>
+      <div class="row" style="gap:12px">
+        <div style="flex:1">
+          <label class="muted">Observables proposées</label>
+          <div id="defaultObs" class="obs-list"></div>
+        </div>
+        <div style="flex:1">
+          <label class="muted">Observables personnalisés</label>
+          <div id="customObs" class="obs-list"></div>
+          <div style="margin-top:8px">
+            <input id="newObsText" placeholder="Ex: Passe réussie"/>
+            <div style="margin-top:6px" class="muted">Quand un élève observe, il peut marquer + pour positif, - pour négatif.</div>
+            <button class="btn btn-green" id="addObsBtn" style="margin-top:8px">➕ Ajouter observable</button>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:12px" class="row">
+        <button class="btn btn-gray" id="backToApsa">⬅️ Retour APSA</button>
+        <button class="btn btn-green" id="goObserv">▶️ Démarrer observation</button>
+      </div>
+    </section>
+
+    <section class="card hidden" id="page-observe">
+      <h2>Observation</h2>
+      <div class="muted">Mode élève — 4 niveaux de maîtrise : 🔴 Fragile • 🟡 Moyen • 🟢 Bon • 🟦 Très bon</div>
+      <div style="margin-top:8px">
+        <label>Nom de l'observateur·rice</label>
+        <input id="observerName" placeholder="Prénom"/>
+        <label style="margin-top:8px">Groupe observé (prénoms séparés par virgule)</label>
+        <input id="groupNames" placeholder="ex : Alice, Bob"/>
+      </div>
+
+      <div id="obsArea" style="margin-top:12px"></div>
+
+      <div style="margin-top:12px" class="row">
+        <button class="btn btn-gray" id="backToObsConfig">⬅️ Retour</button>
+        <button class="btn btn-blue" id="saveObservation">💾 Enregistrer l'observation</button>
+      </div>
+    </section>
+
+    <section class="card hidden" id="page-review">
+      <h2>Bilan & récupération</h2>
+      <div id="savedList"></div>
+      <div style="margin-top:8px" class="muted">Tu peux exporter en PDF (bouton en haut) ou récupérer le JSON en local.</div>
+    </section>
+
+    <section class="card" id="footer-note">
+      <div class="muted">Basé sur le programme officiel (liste d'activités par champ incluse). Voir README.</div>
+    </section>
+  </main>
+</div>
+
+<!-- Simple modals -->
+<div id="helpModal" class="card hidden" style="position:fixed;right:16px;top:70px;width:320px">
+  <h3>Aide rapide</h3>
+  <ul>
+    <li>Choisis un champ → une APSA → sélectionne ou ajoute des observables.</li>
+    <li>En observation : marque + ou - sur chaque observable pour compter actions.</li>
+    <li>Chaque observateur garde ses enregistrements en local (fichier JSON via export).</li>
+  </ul>
+  <button class="btn btn-gray" id="closeHelp">Fermer</button>
+</div>
+
+<script>
+/* ===== Données initiales (extraites du document officiel fourni) =====
+   Source: document fourni par l'utilisateur (liste d'APSA / champs). 
+   Voir README et citation du document. */
+const SPORTS_DATA = {
+  CA1: { code:"CA1", nom:"Réaliser une performance motrice mesurable", apsas:[
+    {id:"athle", nom:"Athlétisme", observables:["Vitesse", "Endurance", "Qualité technique"]},
+    {id:"nat_vit", nom:"Natation de vitesse", observables:["Départ", "Technique de nage", "Virage"]},
+    {id:"combiné", nom:"Combiné athlétique", observables:["Transitions", "Puissance"]}
+  ]},
+  CA2: { code:"CA2", nom:"Adapter ses déplacements", apsas:[
+    {id:"escalade", nom:"Escalade", observables:["Choix de trajectoire","Appuis","Prises"]},
+    {id:"orientation", nom:"Course d'orientation", observables:["Lecture de carte","Choix d'itinéraire","Efficacité"]}
+  ]},
+  CA3: { code:"CA3", nom:"Réaliser une prestation corporelle", apsas:[
+    {id:"acrosport", nom:"Acrosport", observables:["Tenue","Sécurité","Esthétique"]},
+    {id:"danse", nom:"Danse", observables:["Expression","Rythme","Cohérence"]}
+  ]},
+  CA4: { code:"CA4", nom:"Conduire un affrontement", apsas:[
+    {id:"basket", nom:"Basket-ball", observables:["Passe","Défense","Proposition d'attaque"]},
+    {id:"ultimate", nom:"Ultimate (exemple)", observables:["Passe réussie","Passe perdue","Marque"]}
+  ]},
+  CA5: { code:"CA5", nom:"Développer ses ressources et s'entretenir", apsas:[
+    {id:"muscu", nom:"Musculation", observables:["Posture","Sécurité","Progression"]},
+    {id:"course_duree", nom:"Course en durée", observables:["Gestion de l'effort","Régularité","Récupération"]}
+  ]}
+};
+
+/* ===== App state (localStorage) ===== */
+const STORAGE_KEY = "eps_observer_v1";
+let app = { saved: [] };
+
+function load(){
+  try{ const raw=localStorage.getItem(STORAGE_KEY); if(raw) app = JSON.parse(raw); }
+  catch(e){ app = { saved: [] }; }
+}
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(app)); }
+
+/* ===== UI helpers ===== */
+const $ = id => document.getElementById(id);
+function show(id){ document.querySelectorAll('section.card, #helpModal').forEach(s=>s.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
+function el(tag,props={}, children=[]){ const e=document.createElement(tag); Object.assign(e,props); (children||[]).forEach(c=>typeof c==='string'? e.appendChild(document.createTextNode(c)) : e.appendChild(c)); return e; }
+
+/* ===== Render choices ===== */
+function renderChamps(){
+  const container = $('champs'); container.innerHTML='';
+  Object.values(SPORTS_DATA).forEach(c=>{
+    const b = el('button',{className:'btn btn-gray'},[`${c.code} • ${c.nom}`]);
+    b.onclick = ()=>{ selectChamp(c.code); };
+    container.appendChild(b);
+  });
+}
+
+let current = { champ:null, apsa:null, observables: [] };
+
+function selectChamp(code){
+  current.champ = SPORTS_DATA[code];
+  renderApsas();
+  show('page-apsa');
+}
+
+function renderApsas(){
+  const container = $('apsas'); container.innerHTML='';
+  (current.champ.apsas||[]).forEach(a=>{
+    const b = el('button',{className:'btn btn-gray'},[a.nom]);
+    b.onclick = ()=>{ selectApsa(a); };
+    container.appendChild(b);
+  });
+}
+
+/* Add custom APSA */
+$('addApsaBtn').onclick = ()=>{
+  const name = $('newApsaName').value.trim();
+  if(!name) return alert("Nom APSA vide");
+  const id = 'apsa_'+Date.now();
+  const a = {id, nom:name, observables:[]};
+  current.champ.apsas.push(a);
+  $('newApsaName').value='';
+  renderApsas();
+  selectApsa(a);
+};
+
+function selectApsa(a){
+  current.apsa = a;
+  // preload observables (copy)
+  current.observables = (a.observables||[]).map(o=>({text:o, pos:0, neg:0, mastery:'moyen'}));
+  renderObservables();
+  show('page-observables');
+}
+
+/* Observables UI */
+function renderObservables(){
+  const d = $('defaultObs'); const c = $('customObs');
+  d.innerHTML=''; c.innerHTML='';
+  current.observables.forEach((obs, idx)=>{
+    const item = el('div',{className:'obs-item'},[]);
+    const txt = el('div',{},[obs.text]);
+    const plus = el('button',{className:'btn btn-green'},['+']);
+    const minus = el('button',{className:'btn btn-red'},['-']);
+    const posCount = el('div',{className:'count'},[String(obs.pos)]);
+    const negCount = el('div',{className:'count'},[String(obs.neg)]);
+    const mastery = el('select',{},[]); ['fragile','moyen','bon','tb'].forEach(v=>{
+      const opt = el('option',{value:v},[v]); if(v===obs.mastery) opt.selected=true; mastery.appendChild(opt);
+    });
+    plus.onclick = ()=>{ obs.pos++; posCount.textContent=obs.pos; };
+    minus.onclick = ()=>{ obs.neg++; negCount.textContent=obs.neg; };
+    mastery.onchange = ()=>{ obs.mastery = mastery.value; };
+    const del = el('button',{className:'btn btn-gray'},['🗑️']);
+    del.onclick = ()=>{ current.observables.splice(idx,1); renderObservables(); };
+    item.appendChild(txt); item.appendChild(mastery); item.appendChild(plus); item.appendChild(posCount); item.appendChild(minus); item.appendChild(negCount); item.appendChild(del);
+    d.appendChild(item);
+  });
+}
+
+/* add custom observable */
+$('addObsBtn').onclick = ()=>{
+  const t = $('newObsText').value.trim(); if(!t) return;
+  current.observables.push({text:t,pos:0,neg:0,mastery:'moyen'});
+  $('newObsText').value='';
+  renderObservables();
+};
+
+/* Navigation */
+$('startBtn').onclick = ()=>{ renderChamps(); show('page-choose'); };
+$('backToApsa').onclick = ()=> show('page-apsa');
+$('goObserv').onclick = ()=> { renderObservePage(); show('page-observe'); };
+
+/* Observation page rendering */
+function renderObservePage(){
+  const area = $('obsArea'); area.innerHTML='';
+  const list = current.observables;
+  if(!list.length) area.appendChild(el('div',{},['Aucun observable sélectionné']));
+  list.forEach((o,idx)=>{
+    const row = el('div',{className:'obs-item'},[]);
+    row.appendChild(el('div',{},[o.text]));
+    // 4 mastery radio
+    const radios = el('div',{},[]);
+    ['fragile','moyen','bon','tb'].forEach(v=>{
+      const b = el('button',{className:'btn btn-gray'},[v]);
+      b.onclick = ()=>{ o.mastery=v; renderObservePage(); };
+      if(o.mastery===v) b.className='btn btn-blue';
+      radios.appendChild(b);
+    });
+    row.appendChild(radios);
+    // + / - counters
+    const plus = el('button',{className:'btn btn-green'},['+']);
+    const minus = el('button',{className:'btn btn-red'},['-']);
+    const pos = el('div',{className:'count'},[String(o.pos)]);
+    const neg = el('div',{className:'count'},[String(o.neg)]);
+    plus.onclick = ()=>{ o.pos++; pos.textContent=o.pos; };
+    minus.onclick = ()=>{ o.neg++; neg.textContent=o.neg; };
+    row.appendChild(plus); row.appendChild(pos); row.appendChild(minus); row.appendChild(neg);
+    area.appendChild(row);
+  });
+  // observer name and group prefilled by user if present
+  $('observerName').value = $('observerName').value || '';
+  $('groupNames').value = $('groupNames').value || '';
+}
+
+/* Save observation */
+$('saveObservation').onclick = ()=>{
+  const obsName = $('observerName').value.trim();
+  if(!obsName) return alert("Renseigne le nom de l'observateur·rice.");
+  const entry = {
+    id: 'obs_'+Date.now(),
+    date: new Date().toISOString(),
+    observer: obsName,
+    group: $('groupNames').value.split(/[;,]+/).map(s=>s.trim()).filter(Boolean),
+    champ: current.champ.code,
+    apsa: current.apsa.nom,
+    observables: JSON.parse(JSON.stringify(current.observables))
+  };
+  app.saved.push(entry); save(); alert("Observation enregistrée localement."); renderSavedList(); show('page-review');
+};
+
+/* render saved */
+function renderSavedList(){
+  const container = $('savedList'); container.innerHTML='';
+  if(!app.saved.length) container.appendChild(el('div',{},['Aucune observation enregistrée']));
+  app.saved.forEach(s=>{
+    const card = el('div',{className:'card'},[]);
+    card.appendChild(el('div',{},[`# ${s.id} — ${s.apsa} — ${new Date(s.date).toLocaleString()}`]));
+    card.appendChild(el('div',{},[`Observateur: ${s.observer} • Groupe: ${s.group.join(', ')}`]));
+    const ul = el('div',{},[]);
+    s.observables.forEach(o=>{
+      ul.appendChild(el('div',{},[`${o.text} — +:${o.pos} / -:${o.neg} — niveau:${o.mastery}`]));
+    });
+    card.appendChild(ul);
+    const btn = el('button',{className:'btn btn-blue'},['Télécharger JSON']);
+    btn.onclick = ()=>{ downloadJSON(s, s.id+'.json'); };
+    card.appendChild(btn);
+    container.appendChild(card);
+  });
+}
+
+/* Download helper */
+function downloadJSON(obj, filename){
+  const blob = new Blob([JSON.stringify(obj, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/* Export PDF note: we include instructions in README to vendor html2canvas + jspdf locally for offline MDM deployments */
+$('btnExport').onclick = ()=>{ alert("Utilise le bouton Export PDF après avoir vendorisé html2canvas + jspdf dans /vendor. Voir README."); };
+
+/* Help modal */
+$('btnHelp').onclick = ()=> $('helpModal').classList.toggle('hidden');
+$('closeHelp').onclick = ()=> $('helpModal').classList.add('hidden');
+
+/* init */
+load(); renderSavedList();
+</script>
+</body>
+</html>
