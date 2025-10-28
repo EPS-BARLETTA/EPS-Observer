@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>EPS Observer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --bg:#f6f8fb;--card:#fff;--text:#0f172a;--muted:#6b7280;--border:#e5e7eb;
+      --green:#16a34a;--green-dark:#065f46;--red:#ef4444;--amber:#f59e0b;--blue:#2563eb;
+      --shadow:0 2px 12px rgba(15,23,42,.06);
+
+      /* Couleurs CA */
+      --ca1:#ef4444;  /* rouge performance */
+      --ca2:#059669;  /* vert environnement */
+      --ca3:#7c3aed;  /* violet artistique */
+      --ca4:#2563eb;  /* bleu affrontement */
+      --ca5:#0ea5e9;  /* cyan santé */
+
+      /* Panneaux contexte */
+      --panel-observers:#dbeafe; /* bleu clair */
+      --panel-group:#fff7ed;     /* orange clair */
+      --panel-observers-border:#3b82f6;
+      --panel-group-border:#f59e0b;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+    .app{min-height:100dvh;display:flex;flex-direction:column}
+    .header{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--border);padding:10px 16px;display:flex;gap:8px;align-items:center;justify-content:space-between;z-index:10;box-shadow:var(--shadow)}
+    .brand{display:flex;align-items:center;gap:8px;font-weight:900;letter-spacing:.2px}
+    .brand .tag{padding:4px 10px;border-radius:999px;background:#eef2ff;color:#3730a3;border:1px solid #e0e7ff;font-size:12px}
+    .btn{border:0;border-radius:12px;padding:10px 16px;cursor:pointer;font-weight:700;letter-spacing:.2px;box-shadow:var(--shadow)}
+    .btn-green{background:var(--green);color:#fff}
+    .btn-green-dark{background:var(--green-dark);color:#fff}
+    .btn-blue{background:var(--blue);color:#fff}
+    .btn-gray{background:#e5e7eb}
+    .btn-red{background:#ef4444;color:#fff}
+    .btn-amber{background:#f59e0b;color:#111}
+    .btn-outline{background:#fff;border:1px solid var(--border);}
+    .main{flex:1;display:flex;align-items:center;justify-content:center;padding:24px}
+    .section{width:min(1100px,95vw)}
+    .pageTitle{text-align:center;margin:8px 0 20px}
+    .pageTitle h1{font-size:34px;line-height:1.1;margin:0}
+    .pageTitle .sub{color:var(--muted);font-size:14px;margin-top:6px}
+
+    .hero{display:grid;place-items:center;height:70vh;text-align:center}
+    .hero h1{font-size:56px;line-height:1.05;margin:0 0 8px}
+    .hero p{color:var(--muted);font-size:18px;margin:0 0 28px}
+    .start{font-size:18px;padding:14px 28px;border-radius:16px}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .col{flex:1 1 320px}
+    .card{background:#fff;border:1px solid var(--border);border-radius:18px;padding:14px;box-shadow:var(--shadow)}
+    .panel{position:relative;border-radius:18px;border:1px solid var(--border);padding:14px;background:#fff;box-shadow:var(--shadow)}
+    .panel.observers{background:var(--panel-observers);border-color:var(--panel-observers-border)}
+    .panel.group{background:var(--panel-group);border-color:var(--panel-group-border)}
+    .title{font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+    .muted{color:var(--muted);font-size:12px}
+    input[type="text"],input[type="number"],textarea{width:100%;border:1px solid var(--border);border-radius:12px;padding:10px;font-size:16px;background:#fff}
+    input::placeholder, textarea::placeholder{color:#9ca3af}
+    textarea{min-height:84px;resize:vertical}
+    .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .chip{background:#eef2ff;color:#3730a3;border:1px solid #e0e7ff;border-radius:999px;padding:6px 10px;font-size:13px;display:inline-flex;gap:8px;align-items:center}
+    .chip button{border:0;background:transparent;cursor:pointer;color:#6b7280}
+    .grid{display:grid;gap:10px}
+    .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .bar{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .seg{border:1px solid var(--border);padding:8px;border-radius:12px;margin-top:8px;background:#fff}
+    .tile{border:1px solid var(--border);border-radius:16px;padding:14px;background:#fff;box-shadow:var(--shadow);text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:6px;transition:transform .06s ease, box-shadow .12s ease}
+    .tile .big{font-size:18px;font-weight:900}
+    .tile .small{font-size:12px;color:#9ca3af}
+    .tile:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(15,23,42,.10)}
+
+    /* Observation rows */
+    .obs-item{display:grid;grid-template-columns:1fr auto auto 220px;gap:8px;align-items:center;border:1px solid var(--border);border-radius:12px;padding:10px;background:#fff}
+    .obs-label{font-weight:900; padding:6px 10px; border:1px solid var(--border); border-radius:10px; background:#f8fafc}
+    .obs-hint{display:block; font-size:12px; color:#6b7280; margin-top:4px}
+    .count{min-width:96px;text-align:center;border:1px solid var(--border);border-radius:10px;padding:8px;font-weight:800}
+    .buzzers{display:flex;gap:6px;align-items:center}
+    .buzzer{width:64px;height:64px;border-radius:999px;font-size:28px;display:inline-flex;align-items:center;justify-content:center}
+    .mini{padding:10px 14px;border-radius:10px;font-size:14px}
+    .fmb{display:flex;gap:10px;flex-wrap:wrap}
+    .fmb button{border:0;border-radius:10px;padding:8px 10px;background:#e5e7eb;cursor:pointer;min-width:110px}
+    .fmb button.active{outline:2px solid #111;outline-offset:2px;background:#fff}
+    .note{width:100%; border:1px solid var(--border); border-radius:10px; padding:8px; font-size:14px}
+
+    /* Option bar */
+    .optbar{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin:8px 0 12px 0}
+    .optbar .opt{display:flex; align-items:center; gap:6px; background:#fff; border:1px solid var(--border); padding:8px 10px; border-radius:12px}
+
+    .footer{border-top:1px solid var(--border);background:#fff;padding:10px 16px;text-align:center;color:#6b7280;font-size:12px}
+    .hidden{display:none}
+
+    /* PRINT / PDF */
+    .print-page{background:#fff;border:1px solid var(--border);box-shadow:var(--shadow);padding:20px;border-radius:18px;-webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact;}
+    .print-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px}
+    .print-title{font-size:22px;font-weight:900;letter-spacing:.3px}
+    .print-sub{color:#6b7280;font-size:12px}
+    .print-card{border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:12px;background:#fff}
+    .avoid-break{break-inside:avoid;page-break-inside:avoid}
+    .dot{display:inline-block;width:10px;height:10px;border-radius:999px;margin-right:8px;vertical-align:baseline}
+    .dot.red{background:#ef4444}.dot.amber{background:#f59e0b}.dot.green{background:#22c55e}.dot.darkgreen{background:#065f46}
+
+    /* Ribbons colorées pour les blocs CA */
+    .ca-card{position:relative; overflow:hidden}
+    .ca-card::before{content:""; position:absolute; inset:auto 0 0 0; height:6px; background:var(--ca-color); border-bottom-left-radius:16px; border-bottom-right-radius:16px;}
+    .title .pill{display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:900; color:#fff; letter-spacing:.2px; background:var(--ca-color)}
+
+    /* Toast */
+    .toast{position:fixed; left:50%; transform:translateX(-50%); top:14px; background:#111; color:#fff; padding:10px 14px; border-radius:999px; box-shadow:0 8px 24px rgba(0,0,0,.25); font-size:14px; z-index:50; opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease;}
+    .toast.show{opacity:1; transform:translate(-50%,0)}
+
+    /* Chrono */
+    .chrono{display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:#fff; border:1px solid var(--border); border-radius:14px; padding:10px 12px; box-shadow:var(--shadow); font-weight:800;}
+    .chrono .time{min-width:200px; text-align:center; font-size:46px; letter-spacing:.5px; color:#7c3aed}
+    .chrono .ctrls{display:flex; gap:8px; align-items:center}
+    .laps{margin-top:8px}
+    .lap{font-size:12px; color:#374151; background:#f3f4f6; border:1px solid #e5e7eb; border-radius:10px; padding:4px 8px; display:inline-flex; gap:8px; margin-right:6px; margin-bottom:6px}
+    .mode{display:flex; align-items:center; gap:6px}
+    .dur{width:90px}
+
+    /* Historique */
+    .hist-item{display:grid; grid-template-columns:1fr auto auto; gap:8px; align-items:center; border:1px solid var(--border); background:#fff; border-radius:12px; padding:10px}
+    .hist-title{font-weight:900}
+    .hist-meta{font-size:12px; color:#6b7280}
+
+    /* Responsive fix pour éviter les chevauchements */
+    @media (max-width: 980px){ .obs-item{grid-template-columns:1fr} }
+    @media (min-width: 981px) and (max-width: 1180px){ .obs-item{grid-template-columns:1fr auto} }
+  </style>
+
+  <!-- Dépendances PDF -->
+  <script>
+    function loadScript(src){
+      return new Promise((resolve, reject)=>{
+        const s=document.createElement('script'); s.src=src; s.defer=true;
+        s.onload=resolve; s.onerror=()=>reject(new Error("load fail: "+src));
+        document.head.appendChild(s);
+      });
+    }
+    const depsReady = (async ()=>{
+      if(!("html2canvas" in window)){
+        await loadScript("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
+      }
+      if(!(window.jspdf && window.jspdf.jsPDF)){
+        await loadScript("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
+      }
+      return true;
+    })();
+  </script>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="brand">
+      <span class="tag">EPS Observer</span>
+      <span class="muted">v<span id="vApp">2.2.0</span> • Base <span id="vRef">CCA-2025.01</span></span>
+    </div>
+    <div class="row">
+      <button class="btn btn-blue" id="btnHistory">🗂️ Historique</button>
+      <button class="btn btn-amber" id="btnHelp">❓ Aide</button>
+      <button class="btn btn-red" id="btnHardReset">♻️ Reset</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- PAGE 1 : COVER -->
+    <section id="page-cover" class="section">
+      <div class="hero">
+        <div>
+          <h1>EPS Observer</h1>
+          <p>Tous champs CA1 à C5 & toutes APSA • Multi-sessions • PDF</p>
+          <div class="row" style="justify-content:center">
+            <button class="btn btn-green start" id="goSetup">Commencer</button>
+            <button class="btn btn-blue start" id="goHistory">🗂️ Historique</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 1b : HISTORIQUE -->
+    <section id="page-history" class="section hidden">
+      <div class="pageTitle">
+        <h1>Historique des sessions</h1>
+        <div class="sub">Ouvrir, renommer, supprimer, ou exporter une session enregistrée.</div>
+      </div>
+      <div class="card">
+        <div id="histList" class="grid"></div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn btn-gray" id="histBack">⬅️ Accueil</button>
+          <button class="btn btn-green-dark" id="histExportAll">📄 Exporter tout (PDF)</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 2 : ACTIVITÉ & CONTEXTE -->
+    <section id="page-choose" class="section hidden">
+      <div class="pageTitle">
+        <h1>Activité</h1>
+        <div class="sub">Sélectionne un champ (CA1→CA5), choisis une APSA, ou ajoute la tienne. Choisis un niveau pour adapter les observables.</div>
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <div class="panel observers">
+            <div class="title">👀 Observateur·rice(s)</div>
+            <input type="text" id="obsInput" placeholder="ex. Ambre, Léo" />
+            <div class="chips" id="obsChips"></div>
+            <div class="muted">Entrée, virgule, point-virgule ou retour ligne pour ajouter.</div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="panel group">
+            <div class="title">👥 Groupe observé</div>
+            <input type="text" id="grpInput" placeholder="ex. Inès, Léo" />
+            <div class="chips" id="grpChips"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="champsGrid" class="grid" style="grid-template-columns:repeat(1,minmax(0,1fr)); gap:14px; margin-top:12px"></div>
+    </section>
+
+    <!-- PAGE 3 : OBSERVABLES -->
+    <section id="page-observables" class="section hidden">
+      <div class="pageTitle">
+        <h1>Observables</h1>
+        <div class="sub">APSA : <b id="obsAPSA">—</b> • Niveau : <b id="obsNiveau">N—</b> — <span class="muted">Les libellés changent selon le niveau.</span></div>
+      </div>
+
+      <div class="card">
+        <div id="obsList" class="grid"></div>
+        <div class="row" style="margin-top:8px">
+          <input id="newObs" placeholder="Ajouter un observable" />
+          <button class="btn btn-blue" id="btnAddObs">➕ Ajouter</button>
+        </div>
+      </div>
+
+      <div class="nav" style="margin-top:12px">
+        <button class="btn btn-gray" id="backChoose">⬅️ Activité</button>
+        <button class="btn btn-green" id="startObserve">Démarrer l'observation ▶️</button>
+      </div>
+    </section>
+
+    <!-- PAGE 4 : OBSERVATION -->
+    <section id="page-observe" class="section hidden">
+      <div class="pageTitle" style="display:flex; align-items:flex-end; justify-content:space-between; gap:10px">
+        <div>
+          <h1 style="margin-bottom:4px">Observation — <span id="titleAPSA">—</span> • <span id="titleNiveau">N—</span></h1>
+          <div class="sub">Tap + / − • 4 niveaux : 🔴/🟡/🟢/🟩 • Notes/temps (option) • Laps & minuteur</div>
+          <div class="optbar">
+            <label class="opt"><input type="checkbox" id="optShowNotes" checked/> Champ libre</label>
+            <label class="opt"><input type="checkbox" id="optShowLevels" checked/> Niveaux</label>
+            <label class="opt"><input type="checkbox" id="optShowPM" checked/> Boutons +/-</label>
+          </div>
+        </div>
+        <div>
+          <div class="chrono">
+            <span class="time" id="chronoTime">00:00.0</span>
+            <div class="mode">
+              <select id="chronoMode">
+                <option value="chrono">Chrono</option>
+                <option value="timer">Minuteur</option>
+              </select>
+              <input class="dur" id="chronoDur" placeholder="mm:ss" />
+            </div>
+            <div class="ctrls">
+              <button class="btn btn-outline mini" id="chronoStart">Démarrer</button>
+              <button class="btn btn-outline mini" id="chronoLap">Tour</button>
+              <button class="btn btn-outline mini" id="chronoPause">Stop</button>
+              <button class="btn btn-outline mini" id="chronoReset">Réinitialiser</button>
+            </div>
+          </div>
+          <div class="laps" id="laps"></div>
+        </div>
+      </div>
+
+      <div id="observeList" class="card"></div>
+
+      <div class="nav">
+        <button class="btn btn-gray" id="obBack">⬅️ Observables</button>
+        <div class="row">
+          <button class="btn btn-amber" id="obAdd">➕ Observable</button>
+          <button class="btn btn-green" id="obToBilan">📑 Bilan</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 5 : BILAN -->
+    <section id="page-bilan" class="section hidden">
+      <div class="print-page" id="printRoot">
+        <div class="print-header">
+          <div>
+            <div class="print-title">Bilan d'observation</div>
+            <div class="print-sub" id="bilanSubtitle">—</div>
+          </div>
+          <div class="print-sub" id="bilanMeta">Date : —</div>
+        </div>
+
+        <div id="bilanContent"></div>
+
+        <div class="nav" style="margin-top:14px">
+          <button class="btn btn-gray" id="bilanBack">⬅️ Retour</button>
+          <div class="row">
+            <button class="btn btn-green-dark" id="bilanExportPDF">📄 Exporter le PDF</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">EPS Observer – JB</div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    EPS Observer – Équipe EPS Lycée Vauban – LUXEMBOURG – JB
+  </footer>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast">APSA sélectionnée</div>
+
+<script>
+const APP_VERSION = "2.2.0";
+const REF_VERSION = "CCA-base-2025.01";
+
+/* ================== Données ================== */
+const CHAMPS = [
+  { id:"CA1", color:"var(--ca1)", label:"Réaliser une performance motrice maximale mesurable", baseAPSA:[
+    "Course de 1/2 fond","Course de relais","Combiné athlétique","Natation de vitesse"
+  ]},
+  { id:"CA2", color:"var(--ca2)", label:"Adapter son déplacement à des environnements variés et incertains", baseAPSA:[
+    "Escalade","Course d’orientation","Sauvetage aquatique"
+  ]},
+  { id:"CA3", color:"var(--ca3)", label:"Créer et réaliser une prestation à visée artistique ou acrobatique", baseAPSA:[
+    "Danse contemporaine","Arts du cirque","Acrosport","Gymnastique au sol"
+  ]},
+  { id:"CA4", color:"var(--ca4)", label:"Conduire et maîtriser un affrontement individuel ou collectif", baseAPSA:[
+    "Badminton","Tennis de table","Boxe française","Basket-ball","Football","Handball","Rugby","Volley-ball","Judo"
+  ]},
+  { id:"CA5", color:"var(--ca5)", label:"Réaliser et orienter son activité physique pour entretenir sa santé", baseAPSA:[
+    "Course en durée","Musculation","Natation en durée","Step","Yoga"
+  ]},
+];
+
+const APSA_TO_CA = {};
+for(const c of CHAMPS){ for(const a of c.baseAPSA) APSA_TO_CA[a] = c.id; }
+
+const DEFAULT_OBS = {
+  "Basket-ball":["Passe","Tir","Rebond","Aide défensive"],
+  "Football":["Passe","Tir","Pressing","Repli défensif"],
+  "Handball":["Passe","Tir","Bloc/décalage","Retour défensif"],
+  "Rugby":["Passe","Avancée","Placage","Soutien"],
+  "Volley-ball":["Service","Réception","Contre","Attaque"],
+  "Badminton":["Service","Amorti","Dégagé","Smash"],
+  "Tennis de table":["Service","Topspin","Remise","Bloc"],
+  "Judo":["Saisie","Déséquilibre","Projection","Immobilisation"],
+  "Boxe française":["Direct","Fouetté","Parade","Esquive"],
+  "Escalade":["Lecture de voie","Appuis","Prises","Gestion de l’effort"],
+  "Course d’orientation":["Lecture carte","Choix itinéraire","Précision poste","Gestion allure"],
+  "Natation de vitesse":["Départ","Fréquence/Amplitude","Virage","Arrivée"],
+  "Natation en durée":["Allure","Distance","Régularité","Technique"],
+  "Course en durée":["Allure","Régularité","FC/ressenti","Pacing"],
+  "Musculation":["Technique","Charge","Répétitions","Récupération"],
+  "Step":["Complexité des pas","Synchronisation","Rythme","Sécurité"],
+  "Gymnastique au sol":["Éléments","Liaisons","Amplitude","Tenue"],
+  "Acrosport":["Portés","Voltige","Sécurité","Synchronisation"],
+  "Danse contemporaine":["Intention","Espace","Temps","Qualité du mouvement"],
+  "Arts du cirque":["Numéro","Maîtrise objet","Risque contrôlé","Présence"],
+  "Combiné athlétique":["Course","Saut","Lancer","Transitions"],
+  "Course de 1/2 fond":["Allure","Relances","Gestion effort","Arrivée"],
+  "Course de relais":["Transmission","Placement","Allure","Coordination"],
+  "Sauvetage aquatique":["Immersion","Saisie","Remorquage","Gestion effort"],
+  "Yoga":["Respiration","Alignement","Stabilité","Fluidité"]
+};
+
+const CCA_LEVELS = {
+  "Course en durée": {1:["Allure simple (tenir)","Courir sans s'arrêter","Repères de distance"],
+                      2:["Régularité sur 8 min","Ajuste l'allure","Récupération active"],
+                      3:["Repères FC/respiration","Planifie 12–20 min","Chronos intermédiaires"],
+                      4:["Optimisation (négative split)","Stratégie adaptée","Accompagnement d'un pair"]},
+  "Badminton": {1:["Service régulier","Replace au centre","Renvoie haut et loin"],
+                2:["Varie trajectoires","Occupe l’espace","Met en difficulté"],
+                3:["Construit l’échange","Accélère au bon moment","Gère le score"],
+                4:["Stratégie filière","Fixe puis rupture","Exploit faiblesses"]},
+  "Escalade": {1:["Assurage en 5 temps","Repère 2-3 prises","Appuis stables"],
+               2:["Choix d’itinéraire simple","Transfert d’appuis","Gère la peur"],
+               3:["Lecture de voie","Engagement maîtrisé","Gestion effort"],
+               4:["Optimise repos","Anticipe sections clés","Communication fine"]}
+};
+
+const CA_LEVEL_HINTS = {
+  CA1:{1:"Découverte / Allure de base",2:"Régularité & tenue",3:"Optimisation technique",4:"Stratégie & gestion d'effort"},
+  CA2:{1:"Sécurité & repères",2:"Choix simples",3:"Lecture/anticipation",4:"Optimisation itinéraire/effort"},
+  CA3:{1:"Exécuter",2:"Enchaîner",3:"Qualité/expressivité",4:"Intention & présence"},
+  CA4:{1:"Régularité du geste",2:"Mettre en difficulté",3:"Construire/finir",4:"Stratégie & lecture adverse"},
+  CA5:{1:"Entrer dans l’effort",2:"Régularité & contrôle",3:"Planification/auto-régulation",4:"Optimisation santé/perf"}
+};
+
+/* ================== State ================== */
+const STORAGE_KEY = "eps_observer_v2_levels_all";
+
+function freshApp(){
+  return {
+    observers: [], group: [],
+    champs: JSON.parse(JSON.stringify(CHAMPS)),
+    selected: { champ:null, apsa:null, niveau:2 },
+    observables: [],
+    current: null,
+    sessions: [], /* ⬅️ multi-sessions */
+    settings:{ showNotes:true, showLevels:true, showPM:true },
+    timer:{mode:"chrono", running:false, start:0, elapsed:0, target:0, handle:null, laps:[]}
+  };
+}
+const app = freshApp();
+
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(app)); }
+function load(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const obj=JSON.parse(raw);
+      Object.assign(app, freshApp(), obj);
+      // Sécurité: normaliser sessions
+      app.sessions = Array.isArray(app.sessions) ? app.sessions : [];
+    }
+  }catch{}
+}
+function hardReset(){
+  if(!confirm("Tout réinitialiser ?")) return;
+  localStorage.removeItem(STORAGE_KEY);
+  Object.assign(app, freshApp());
+  renderAll(); show("cover"); save();
+}
+
+/* ================== Helpers ================== */
+const $ = (id)=>document.getElementById(id);
+function toChips(container, arr, onRemove){
+  container.innerHTML = "";
+  (arr||[]).forEach((name, i)=>{
+    const s = document.createElement("span");
+    s.className = "chip";
+    s.innerHTML = `<span>${name}</span>`;
+    const b = document.createElement("button");
+    b.textContent = "×"; b.onclick = ()=> onRemove(i);
+    s.appendChild(b); container.appendChild(s);
+  });
+}
+function show(which){
+  ["page-cover","page-choose","page-observables","page-observe","page-bilan","page-history"].forEach(id=>$(id).classList.add("hidden"));
+  const map={cover:"page-cover", choose:"page-choose", observables:"page-observables", observe:"page-observe", bilan:"page-bilan", history:"page-history"};
+  $(map[which]).classList.remove("hidden");
+}
+let toastTimer=null;
+function toast(msg){
+  const t=$("toast"); if(!t) return;
+  t.textContent=msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove("show"), 1600);
+}
+function uid(){ return Math.random().toString(36).slice(2); }
+
+/* ================== Chrono / Minuteur ================== */
+function parseDur(s){
+  const m=String(s||"").trim().match(/^(\\d{1,3}):(\\d{2})$/);
+  if(!m) return 0;
+  return (parseInt(m[1],10)*60+parseInt(m[2],10))*1000;
+}
+function formatTime(ms){
+  const sign=ms<0?"-":""; ms=Math.abs(ms);
+  const m=Math.floor(ms/60000); const s=Math.floor((ms%60000)/1000); const d=Math.floor((ms%1000)/100);
+  return `${sign}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${d}`;
+}
+function updateChrono(){
+  const now=Date.now(); let cur=0;
+  if(app.timer.mode==="chrono"){
+    cur = app.timer.running ? app.timer.elapsed + (now - app.timer.start) : app.timer.elapsed;
+  } else {
+    const spent = app.timer.running ? app.timer.elapsed + (now - app.timer.start) : app.timer.elapsed;
+    cur = Math.max(0, app.timer.target - spent);
+    if(app.timer.running && cur===0){
+      // fin minuteur
+      app.timer.running=false;
+      if(app.timer.handle){ clearInterval(app.timer.handle); app.timer.handle=null; }
+      toast("⏱️ Temps écoulé");
+    }
+  }
+  $("chronoTime").textContent = formatTime(cur);
+}
+function startChrono(){
+  if(app.timer.running) return;
+  if(app.timer.mode==="timer"){
+    // cible requise
+    const t = parseDur($("chronoDur").value);
+    if(t<=0){ alert("Renseigne une durée mm:ss pour le minuteur."); return; }
+    // Si target a changé, on repart propre
+    if(app.timer.target !== t){ app.timer.target = t; app.timer.elapsed = 0; }
+  }
+  app.timer.running=true; app.timer.start=Date.now();
+  app.timer.handle=setInterval(updateChrono,100);
+  updateChrono();
+}
+function pauseChrono(){
+  if(!app.timer.running) return;
+  app.timer.elapsed += Date.now() - app.timer.start;
+  app.timer.running=false;
+  if(app.timer.handle){ clearInterval(app.timer.handle); app.timer.handle=null; }
+  updateChrono(); save();
+}
+function resetChrono(){
+  app.timer.running=false; app.timer.start=0; app.timer.elapsed=0;
+  app.timer.target=(app.timer.mode==="timer")?parseDur($("chronoDur").value):0;
+  app.timer.laps=[]; $("laps").innerHTML="";
+  if(app.timer.handle){ clearInterval(app.timer.handle); app.timer.handle=null; }
+  updateChrono(); save();
+}
+function addLap(){
+  const text=$("chronoTime").textContent;
+  const lapIdx=app.timer.laps.length+1;
+  app.timer.laps.push(text);
+  const span=document.createElement("span");
+  span.className="lap"; span.textContent=`Tour ${lapIdx}: ${text}`;
+  $("laps").appendChild(span);
+  save();
+}
+
+/* ================== Observables dynamiques ================== */
+function getHintFor(apsa, level){
+  const ca = APSA_TO_CA[apsa] || "CA4";
+  const arr = CA_LEVEL_HINTS[ca] || {1:"Découverte",2:"Stabilisation",3:"Efficacité",4:"Exploitation"};
+  return arr[level] || arr[2];
+}
+function buildObservablesFor(apsa, niveau){
+  if(CCA_LEVELS[apsa] && CCA_LEVELS[apsa][niveau]){
+    return CCA_LEVELS[apsa][niveau].map(t=>({text:t.split("|")[0], hint:null, pos:0,neg:0,level:"moyen",note:""}));
+  }
+  const base = DEFAULT_OBS[apsa] || ["Observable 1","Observable 2"];
+  const hint = getHintFor(apsa, niveau);
+  return base.map(k=>({text:`${k} — ${hint}`, hint:hint, pos:0,neg:0,level:"moyen",note:""}));
+}
+
+/* ================== Renders ================== */
+function renderChamps(){
+  const grid = $("champsGrid"); grid.innerHTML = "";
+  // Sélecteur de niveau
+  const lvlWrap = document.createElement("div");
+  lvlWrap.className="card";
+  lvlWrap.innerHTML = \`<div class="title">🎚️ Niveau de maîtrise (1 → 4)</div>
+    <div class="row">
+      \${[1,2,3,4].map(n=>\`<button class="btn \${app.selected.niveau===n?'btn-green':'btn-gray'}" data-lvl="\${n}">\${n}</button>\`).join("")}
+    </div>\`;
+  lvlWrap.querySelectorAll("[data-lvl]").forEach(b=>b.onclick=()=>{
+    app.selected.niveau=Number(b.getAttribute("data-lvl")); save();
+    if(app.selected.apsa){
+      app.observables = buildObservablesFor(app.selected.apsa, app.selected.niveau);
+      renderObservables(); renderObserve();
+    }
+    renderChamps();
+  });
+  grid.appendChild(lvlWrap);
+
+  // Blocs CA
+  CHAMPS.forEach(c=>{
+    const sec = document.createElement("div"); sec.className="card ca-card";
+    sec.style.setProperty('--ca-color', c.color);
+    sec.innerHTML = \`<div class="title"><span class="pill">\${c.id}</span> <span>\${c.label}</span></div>\`;
+    const g = document.createElement("div"); g.className = "grid grid-4";
+    (c.baseAPSA||[]).forEach(name=>{
+      const a = document.createElement("a");
+      a.className="tile"; a.href="javascript:void(0)";
+      a.innerHTML = \`<div class="big">\${name}</div><div class="small">Sélectionner</div>\`;
+      a.onclick = ()=>{
+        app.selected.champ=c.id; app.selected.apsa=name; save();
+        app.observables = buildObservablesFor(app.selected.apsa, app.selected.niveau);
+        toast(\`APSA : \${name} • N\${app.selected.niveau}\`);
+        renderObservables(); show("observables");
+      };
+      g.appendChild(a);
+    });
+    // Ajout APSA
+    const add = document.createElement("div"); add.className="tile";
+    add.innerHTML = \`<div class="big">➕ Ajouter une APSA</div><div class="small">Personnaliser ce champ</div>
+      <div class="row" style="margin-top:8px"><input placeholder="Nom de l'APSA" id="in-\${c.id}"><button class="btn btn-gray" id="btn-\${c.id}">Ajouter</button></div>\`;
+    g.appendChild(add);
+    add.querySelector(\`#btn-\${c.id}\`).onclick = ()=>{
+      const v = add.querySelector(\`#in-\${c.id}\`).value.trim(); if(!v) return;
+      if(!c.baseAPSA.includes(v)) c.baseAPSA.push(v);
+      APSA_TO_CA[v] = c.id;
+      app.selected.champ=c.id; app.selected.apsa=v;
+      app.observables = buildObservablesFor(v, app.selected.niveau);
+      save(); renderChamps();
+      toast(\`APSA ajoutée : \${v} • N\${app.selected.niveau}\`);
+      renderObservables(); show("observables");
+    };
+    sec.appendChild(g); grid.appendChild(sec);
+  });
+}
+function renderChoose(){
+  toChips($("obsChips"), app.observers, (i)=>{ app.observers.splice(i,1); save(); renderChoose(); });
+  toChips($("grpChips"), app.group, (i)=>{ app.group.splice(i,1); save(); renderChoose(); });
+  renderChamps();
+}
+function renderObservables(){
+  $("obsAPSA").textContent = app.selected.apsa || "—";
+  $("obsNiveau").textContent = \`N\${app.selected.niveau}\`;
+  const list = $("obsList"); list.innerHTML="";
+  (app.observables||[]).forEach((o,i)=>{
+    const row = document.createElement("div"); row.className="seg";
+    row.innerHTML = \`<div><b>\${o.text}</b></div>\`;
+    const del = document.createElement("button"); del.className="btn btn-gray"; del.textContent="Supprimer";
+    del.style.marginTop="6px"; del.onclick = ()=>{ app.observables.splice(i,1); save(); renderObservables(); };
+    row.appendChild(del); list.appendChild(row);
+  });
+}
+function renderObserve(){
+  $("titleAPSA").textContent = app.selected.apsa || "—";
+  $("titleNiveau").textContent = \`N\${app.selected.niveau}\`;
+  const cont = $("observeList"); cont.innerHTML="";
+  if(!app.current){ cont.innerHTML = \`<div class="muted" style="padding:10px">Aucune observation en cours.</div>\`; return; }
+
+  const showNotes = !!app.settings.showNotes;
+  const showLevels = !!app.settings.showLevels;
+  const showPM = !!app.settings.showPM;
+
+  app.current.items.forEach((it, idx)=>{
+    const row=document.createElement("div"); row.className="obs-item";
+
+    const name=document.createElement("div");
+    const parts = String(it.text).split(" — ");
+    const label = parts[0]; const hint = parts.slice(1).join(" — ");
+    name.innerHTML = \`<span class="obs-label"><b>\${label}</b></span>\${hint?\\`<span class="obs-hint">N\${app.selected.niveau}: \${hint}</span>\\`:""}\`;
+
+    const ctr=document.createElement("div"); ctr.className='buzzers';
+    if(showPM){
+      const minus=document.createElement("button"); minus.className='btn btn-red buzzer'; minus.textContent='−';
+      const decNeg=document.createElement("button"); decNeg.className='btn btn-outline mini'; decNeg.textContent='corr. -';
+      const countP=document.createElement("div"); countP.className='count'; countP.textContent = \`+\${it.pos} / -\${it.neg}\`;
+      const decPos=document.createElement("button"); decPos.className='btn btn-outline mini'; decPos.textContent='corr. +';
+      const plus=document.createElement("button"); plus.className='btn btn-green buzzer'; plus.textContent='+';
+
+      minus.onclick=()=>{ it.neg++; countP.textContent = \`+\${it.pos} / -\${it.neg}\`; persistCurrent(); };
+      plus.onclick=()=>{ it.pos++; countP.textContent = \`+\${it.pos} / -\${it.neg}\`; persistCurrent(); };
+      decNeg.onclick=()=>{ if(it.neg>0){ it.neg--; countP.textContent = \`+\${it.pos} / -\${it.neg}\`; persistCurrent(); } };
+      decPos.onclick=()=>{ if(it.pos>0){ it.pos--; countP.textContent = \`+\${it.pos} / -\${it.neg}\`; persistCurrent(); } };
+
+      ctr.append(minus,decNeg,countP,decPos,plus);
+    } else {
+      ctr.classList.add("hidden");
+    }
+
+    const levels = document.createElement("div"); levels.className="fmb";
+    if(showLevels){
+      [["fragile","🔴 Fragile"],["moyen","🟡 Moyen"],["bon","🟢 Bon"],["tb","🟩 Très bon"]].forEach(([v,lab])=>{
+        const b=document.createElement("button"); b.textContent=lab; if(it.level===v) b.classList.add("active");
+        b.onclick=()=>{ it.level=v; renderObserve(); persistCurrent(); };
+        levels.appendChild(b);
+      });
+    } else { levels.classList.add("hidden"); }
+
+    const noteWrap=document.createElement("div");
+    if(showNotes){
+      const input=document.createElement("input");
+      input.className="note";
+      input.placeholder="Note/temps (ex: 12''3, 1'05'', consigne…)";
+      input.value = it.note||"";
+      input.oninput = (e)=>{ it.note = e.target.value; persistCurrent(); };
+      noteWrap.appendChild(input);
+    } else { noteWrap.classList.add("hidden"); }
+
+    row.append(name, ctr, levels, noteWrap);
+    cont.append(row);
+  });
+}
+function renderBilan(){
+  const team=(app.observers||[]).join(", ")||"—";
+  $("bilanSubtitle").textContent = \`Observateurs : \${team} • \${new Date().toLocaleString()}\`;
+  $("bilanMeta").textContent = \`Date : \${new Date().toLocaleDateString()}\`;
+
+  const cont=$("bilanContent"); cont.innerHTML="";
+  const sessions = getAllSessionsForReport();
+
+  if(!sessions.length){
+    cont.innerHTML = \`<div class="print-card">Aucune observation enregistrée.</div>\`;
+    return;
+  }
+
+  sessions.forEach((o, idx)=>{
+    const card=document.createElement("div"); card.className="print-card avoid-break";
+    const h=document.createElement("div");
+    h.innerHTML = \`<b>\${o.champ||"—"} — \${o.apsa||"—"}</b> (N\${o.niveau||app.selected.niveau})\`;
+    const who=document.createElement("div"); who.className="muted";
+    who.textContent = \`Obs: \${(o.observers||[]).join(", ")||"—"} • Groupe: \${(o.group||[]).join(", ")||"—"} • \${new Date(o.date||Date.now()).toLocaleString()}\`;
+    const laps = (o.laps||[]).length ? \`<div class="muted" style="margin-top:6px">Tours: \${o.laps.join(" • ")}</div>\` : "";
+    const ul=document.createElement("ul"); ul.style.margin="8px 0 0 16px";
+    (o.items||[]).forEach(it=>{
+      const li=document.createElement("li");
+      const color = it.level==="fragile"?"red":it.level==="moyen"?"amber":it.level==="bon"?"green":"darkgreen";
+      const note = (it.note||"").trim() ? \` — <i>\${it.note}</i>\` : "";
+      const parts = String(it.text).split(" — ");
+      const label = parts[0]; const hint = parts.slice(1).join(" — ");
+      const hintTxt = hint ? \` — \${hint}\` : "";
+      li.innerHTML = \`<span class="dot \${color}"></span><b>\${label}</b>\${hintTxt} — +\${it.pos} / -\${it.neg}\${note}\`;
+      ul.append(li);
+    });
+    card.append(h, who, ul);
+    if(laps) card.insertAdjacentHTML("beforeend", laps);
+    cont.append(card);
+  });
+}
+function renderHistory(){
+  const wrap = $("histList"); wrap.innerHTML = "";
+  if(!app.sessions.length){
+    wrap.innerHTML = '<div class="muted" style="padding:10px">Aucune session sauvegardée pour le moment.</div>';
+    return;
+  }
+  app.sessions.slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(sess=>{
+    const item=document.createElement("div"); item.className="hist-item";
+    const left=document.createElement("div");
+    const title=document.createElement("div"); title.className="hist-title";
+    title.textContent = \`\${sess.apsa||"—"} (N\${sess.niveau||"?"})\`;
+    const meta=document.createElement("div"); meta.className="hist-meta";
+    meta.textContent = \`\${new Date(sess.date).toLocaleString()} • \${sess.champ||"—"} • Groupe: \${(sess.group||[]).join(", ")||"—"}\`;
+    left.append(title, meta);
+
+    const open=document.createElement("button"); open.className="btn btn-blue"; open.textContent="Ouvrir";
+    open.onclick=()=>{ app.current = JSON.parse(JSON.stringify(sess)); save(); renderObserve(); show("observe"); };
+    const del=document.createElement("button"); del.className="btn btn-red"; del.textContent="Supprimer";
+    del.onclick=()=>{
+      if(!confirm("Supprimer définitivement cette session ?")) return;
+      app.sessions = app.sessions.filter(s=>s.id!==sess.id);
+      // si on supprime la session actuelle
+      if(app.current && app.current.id===sess.id){ app.current=null; }
+      save(); renderHistory();
+    };
+    item.append(left, open, del);
+    wrap.append(item);
+  });
+}
+
+/* ================== Multi-sessions helpers ================== */
+function persistCurrent(){
+  // Mettre à jour la session courante dans le tableau sessions
+  if(!app.current) return;
+  const idx = app.sessions.findIndex(s=>s.id===app.current.id);
+  const snapshot = {
+    id: app.current.id,
+    date: app.current.date,
+    champ: app.current.champ,
+    apsa: app.current.apsa,
+    niveau: app.current.niveau || app.selected.niveau,
+    observers: [...(app.current.observers||[])],
+    group: [...(app.current.group||[])],
+    items: app.current.items.map(x=>({...x})),
+    laps: [...(app.timer.laps||[])]
+  };
+  if(idx>=0) app.sessions[idx]=snapshot; else app.sessions.push(snapshot);
+  save();
+}
+function getAllSessionsForReport(){
+  // Renvoie [sessions passées triées par date ASC] + [courante si distincte]
+  const map = new Map();
+  (app.sessions||[]).forEach(s=>map.set(s.id, s));
+  if(app.current){
+    map.set(app.current.id, {
+      ...app.current,
+      niveau: app.current.niveau || app.selected.niveau,
+      laps: [...(app.timer.laps||[])]
+    });
+  }
+  return Array.from(map.values()).sort((a,b)=>new Date(a.date)-new Date(b.date));
+}
+
+/* ================== Export PDF ================== */
+async function exportPDF(allFromHistory=false){
+  const ok = await depsReady.catch(()=>false);
+  if(!ok){ alert("Dépendances PDF non chargées."); return; }
+
+  const sessions = allFromHistory ? (app.sessions||[]) : getAllSessionsForReport();
+  if(!sessions.length){ alert("Aucune session à exporter."); return; }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 40;
+
+  const team = (app.observers||[]).filter(Boolean);
+  const some = sessions[sessions.length-1] || app.current || {};
+  const group = (some.group||[]).filter(Boolean);
+  const nameForFile = (group.length?group:team).join("-").replace(/[^\\w-]+/g,"-").replace(/-+/g,"-");
+  const date = new Date().toISOString().slice(0,10);
+
+  function footer(p,total){
+    return \`EPS Observer v\${APP_VERSION} • Base \${REF_VERSION}  •  Page \${p}/\${total}  •  \${new Date().toLocaleDateString()}\`;
+  }
+  function drawFooterCentered(p){
+    const total = doc.getNumberOfPages();
+    doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(120);
+    doc.text(footer(p,total), pageW/2, pageH - 16, { align:"center", baseline:"alphabetic" });
+    doc.setTextColor(0);
+  }
+  function newPage(){ const cur = doc.internal.getCurrentPageInfo().pageNumber; drawFooterCentered(cur); doc.addPage(); }
+
+  const retinaScale = Math.min(2, window.devicePixelRatio || 1.5);
+  async function snapEl(el){
+    const canvas = await html2canvas(el, { backgroundColor: null, scale: retinaScale, useCORS: true });
+    const imgData = canvas.toDataURL("image/png");
+    const fullW = pageW - margin*2;
+    const ratio = canvas.height / canvas.width;
+    const fullH = fullW * ratio;
+    return { imgData, imgW: fullW, imgH: fullH, ratio };
+  }
+
+  // Couverture
+  const cover = document.createElement("div");
+  cover.style.width="794px"; cover.style.height="1123px"; cover.style.display="flex";
+  cover.style.alignItems="center"; cover.style.justifyContent="center"; cover.style.flexDirection="column";
+  cover.style.background="linear-gradient(135deg,#ffffff 0%, #f6f8fb 100%)";
+  cover.style.color="#0f172a"; cover.style.border="1px solid #e5e7eb"; cover.style.borderRadius="18px";
+  cover.style.padding="48px"; cover.style.position="fixed"; cover.style.left="-99999px";
+  cover.innerHTML = \`
+    <span style="display:inline-block;padding:6px 12px;border-radius:999px;font-weight:800;background:#eef2ff;color:#3730a3;border:1px solid #e0e7ff;letter-spacing:.3px;margin-bottom:16px">EPS Observer</span>
+    <h1 style="font-size:54px;font-weight:900;text-align:center;line-height:1.12;margin:0 0 14px 0">Dossier d’observation</h1>
+    <div style="font-size:32px;text-align:center;opacity:.95;margin:0 0 10px 0;font-weight:800">\${(group.length?group:team).join(", ")||"Observateurs"}</div>
+    <div style="font-size:18px;color:#6b7280;text-align:center">\${new Date().toLocaleDateString()}</div>
+    <div style="position:absolute;bottom:22px;left:0;right:0;text-align:center;font-size:12px;color:#6b7280">APSA: \${some.apsa||app.current?.apsa||"—"} • Champ: \${some.champ||app.current?.champ||"—"} • Niveau: N\${some.niveau||app.selected.niveau}</div>
+  \`;
+  document.body.appendChild(cover);
+  const coverShot = await snapEl(cover);
+  document.body.removeChild(cover);
+  const maxW = pageW - margin*2, maxH = pageH - margin*2;
+  let w = coverShot.imgW, h = coverShot.imgH;
+  const scale = Math.min(maxW / w, maxH / h);
+  w *= scale; h *= scale;
+  const x = (pageW - w)/2, top = (pageH - h)/2;
+  doc.addImage(coverShot.imgData, "PNG", x, top, w, h, undefined, "FAST");
+
+  // Pages de bilan pour chaque session (on réutilise le DOM printRoot)
+  const printRoot = document.getElementById("printRoot");
+  const keep = printRoot.innerHTML;
+
+  // Construire le contenu regroupant toutes les sessions
+  const container = document.createElement("div");
+  container.style.width = "794px"; // proche A4
+  sessions.forEach(s=>{
+    const block=document.createElement("div"); block.className="print-card avoid-break";
+    const h=document.createElement("div");
+    h.innerHTML = \`<b>\${s.champ||"—"} — \${s.apsa||"—"}</b> (N\${s.niveau||app.selected.niveau})\`;
+    const who=document.createElement("div"); who.className="muted";
+    who.textContent = \`Obs: \${(s.observers||[]).join(", ")||"—"} • Groupe: \${(s.group||[]).join(", ")||"—"} • \${new Date(s.date||Date.now()).toLocaleString()}\`;
+    const ul=document.createElement("ul"); ul.style.margin="8px 0 0 16px";
+    (s.items||[]).forEach(it=>{
+      const li=document.createElement("li");
+      const color = it.level==="fragile"?"red":it.level==="moyen"?"amber":it.level==="bon"?"green":"darkgreen";
+      const parts = String(it.text).split(" — ");
+      const label = parts[0]; const hint = parts.slice(1).join(" — ");
+      const hintTxt = hint ? \` — \${hint}\` : "";
+      const note = (it.note||"").trim() ? \` — <i>\${it.note}</i>\` : "";
+      li.innerHTML = \`<span class="dot \${color}"></span><b>\${label}</b>\${hintTxt} — +\${it.pos} / -\${it.neg}\${note}\`;
+      ul.appendChild(li);
+    });
+    const laps = (s.laps||[]).length ? \`<div class="muted" style="margin-top:6px">Tours: \${s.laps.join(" • ")}</div>\` : "";
+    block.appendChild(h); block.appendChild(who); block.appendChild(ul);
+    if(laps) block.insertAdjacentHTML("beforeend", laps);
+    container.appendChild(block);
+  });
+
+  printRoot.innerHTML = ""; printRoot.appendChild(container);
+  const shot = await snapEl(printRoot);
+  printRoot.innerHTML = keep;
+
+  newPage();
+  doc.addImage(shot.imgData, "PNG", margin, margin, shot.imgW, shot.imgH, undefined, "FAST");
+
+  const total = doc.getNumberOfPages();
+  for(let p=1;p<=total;p++){ doc.setPage(p); drawFooterCentered(p); }
+
+  const filename = \`EPS-\${nameForFile||"Observateurs"}-\${(some.apsa||"APSA")}-N\${some.niveau||app.selected.niveau}-\${date}.pdf\`;
+  doc.save(filename);
+}
+
+/* ================== Wiring ================== */
+function renderAll(){ renderChoose(); renderObservables(); renderObserve(); renderBilan(); renderHistory(); }
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  // Toujours démarrer sur la couverture
+  show("cover");
+  load();
+
+  // Header
+  $("btnHelp").onclick = ()=> alert("1) Choisis CA/APSA + niveau et le contexte • 2) Observables (N1→N4) • 3) Observe (options, +/−, niveaux, notes, chrono/minuteur) • 4) Historique • 5) Bilan → PDF.\nAucune donnée n'est envoyée : tout est local.");
+  $("btnHardReset").onclick = hardReset;
+  $("btnHistory").onclick = ()=>{ renderHistory(); show("history"); };
+  $("goHistory").onclick = ()=>{ renderHistory(); show("history"); };
+
+  // nav cover -> choose
+  $("goSetup").onclick = ()=> show("choose");
+  $("histBack").onclick = ()=> show("cover");
+  $("histExportAll").onclick = ()=> exportPDF(true);
+
+  // chips inputs
+  $("obsInput").addEventListener("keydown",(e)=>{
+    if(["Enter",",",";"].includes(e.key)){
+      e.preventDefault();
+      const arr = $("obsInput").value.replace(/\\r\\n?/g,"\\n").split(/[ ,;\\n]+/).map(s=>s.trim()).filter(Boolean);
+      app.observers = Array.from(new Set([...(app.observers||[]), ...arr])); $("obsInput").value=""; save(); renderChoose();
+    }
+  });
+  $("grpInput").addEventListener("keydown",(e)=>{
+    if(["Enter",",",";"].includes(e.key)){
+      e.preventDefault();
+      const arr = $("grpInput").value.replace(/\\r\\n?/g,"\\n").split(/[ ,;\\n]+/).map(s=>s.trim()).filter(Boolean);
+      app.group = Array.from(new Set([...(app.group||[]), ...arr])); $("grpInput").value=""; save(); renderChoose();
+    }
+  });
+
+  // options observation
+  $("optShowNotes").onchange = (e)=>{ app.settings.showNotes = e.target.checked; save(); renderObserve(); };
+  $("optShowLevels").onchange = (e)=>{ app.settings.showLevels = e.target.checked; save(); renderObserve(); };
+  $("optShowPM").onchange     = (e)=>{ app.settings.showPM = e.target.checked; save(); renderObserve(); };
+
+  // chrono
+  $("chronoMode").onchange = (e)=>{ app.timer.mode = e.target.value; resetChrono(); save(); };
+  $("chronoStart").onclick = ()=> startChrono();
+  $("chronoPause").onclick = ()=> pauseChrono();
+  $("chronoReset").onclick = ()=> resetChrono();
+  $("chronoLap").onclick   = ()=> addLap();
+  updateChrono();
+
+  // pages
+  $("backChoose").onclick = ()=> show("choose");
+  $("btnAddObs").onclick = ()=>{
+    const v = $("newObs").value.trim(); if(!v) return;
+    app.observables.push({text:v,pos:0,neg:0,level:"moyen",note:""}); $("newObs").value=""; save(); renderObservables();
+  };
+  $("startObserve").onclick = ()=>{
+    const items = app.observables.map(o=>({text:o.text, pos:0, neg:0, level:"moyen", note:""}));
+    const session = {
+      id: uid(),
+      date: new Date().toISOString(),
+      champ: app.selected.champ, apsa: app.selected.apsa,
+      niveau: app.selected.niveau,
+      observers: [...(app.observers||[])], group:[...(app.group||[])],
+      items, laps: []
+    };
+    app.current = JSON.parse(JSON.stringify(session));
+    app.sessions.push(session);
+    save(); renderObserve(); show("observe");
+  };
+  $("obBack").onclick = ()=> show("observables");
+  $("obAdd").onclick = ()=>{
+    const v = prompt("Nom de l'observable à ajouter :"); if(!v) return;
+    const it={text:v,pos:0,neg:0,level:"moyen",note:""};
+    if(!app.current){ alert("Pas d'observation en cours."); return; }
+    app.current.items.push(it);
+    app.observables.push({text:v,pos:0,neg:0,level:"moyen",note:""});
+    persistCurrent(); renderObserve();
+  };
+  $("obToBilan").onclick = ()=>{ renderBilan(); show("bilan"); };
+  $("bilanBack").onclick = ()=> show("observe");
+  $("bilanExportPDF").onclick = ()=> exportPDF(false);
+
+  // initial renders
+  renderAll();
+});
+</script>
+</body>
+</html>
