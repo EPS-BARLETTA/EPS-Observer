@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>EPS Observer — Ajouter</title>
+  <link rel="stylesheet" href="./assets/style.css">
+  <script type="module">
+    import {EXPERIENCES} from './assets/data.js';
+    import {load, save, ensurePage, makeNav, uid} from './assets/app.js';
+    const state = load();
+    window.addEventListener('DOMContentLoaded', ()=>{
+      document.body.append(makeNav("Ajouter"));
+      const sel = document.getElementById('exp');
+      EXPERIENCES.forEach(e=>{ const o=document.createElement('option'); o.value=e.id; o.textContent = `${e.id} — ${e.label}`; sel.append(o); });
+      document.getElementById('addAct').onclick = ()=>{
+        const exp = sel.value; const name = document.getElementById('name').value.trim(); if(!name) return;
+        // seed empty page with no preset
+        state.pages[exp] = state.pages[exp] || {};
+        state.pages[exp][name] = {observables:[{id:uid(),text:"Observable 1",pos:0,neg:0,mastery:"moyen"}]};
+        save(state);
+        alert("Activité ajoutée. Ouvrir la page pour la configurer.");
+        document.getElementById('name').value="";
+      };
+    });
+  </script>
+</head>
+<body>
+  <header class="header">
+    <div class="brand">➕ Ajouter une activité</div>
+    <a class="btn" href="./index.html">Accueil</a>
+  </header>
+  <main class="main">
+    <section class="card">
+      <h2 class="section-title">Nouvelle activité (PPSA d’établissement possible)</h2>
+      <div class="grid grid-2">
+        <div><label>Expérience corporelle</label><select id="exp"></select></div>
+        <div><label>Nom de l’activité</label><input id="name" placeholder="Ex: Ultimate, Sauvetage côtier, Futsal…"></div>
+      </div>
+      <div style="margin-top:12px"><button id="addAct" class="btn btn-cta">Créer l’activité</button></div>
+      <p class="muted" style="margin-top:8px">Ajoute autant d’activités que nécessaire (liste académique ou PPSA d’établissement). Elles apparaissent sur la page d’accueil.</p>
+    </section>
+  </main>
+</body>
+</html>

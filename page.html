@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>EPS Observer — Page</title>
+  <link rel="stylesheet" href="./assets/style.css">
+  <script type="module">
+    import {load, save, ensurePage, obsRow, makeNav, uid} from './assets/app.js';
+    const state = load();
+    const url = new URL(window.location.href);
+    const exp = url.searchParams.get('exp'); const ppsa = url.searchParams.get('ppsa');
+    if(!exp || !ppsa){ document.write('<div class="main"><div class="card">Paramètres manquants.</div></div>'); throw new Error('missing'); }
+
+    window.addEventListener('DOMContentLoaded', ()=>{
+      document.body.append(makeNav("Accueil"));
+      document.getElementById('title').textContent = `${ppsa}`;
+      document.getElementById('crumb').textContent = `${exp}`;
+      const page = ensurePage(state, exp, ppsa);
+      const list = document.getElementById('obsList');
+      function render(){
+        list.innerHTML=""; page.observables.forEach(o=> list.appendChild(obsRow(o, ()=>{ save(state); })));
+      }
+      render();
+
+      document.getElementById('addObs').onclick = ()=>{
+        const t = document.getElementById('newObs').value.trim(); if(!t) return;
+        page.observables.push({id:uid(), text:t, pos:0, neg:0, mastery:"moyen"}); save(state); document.getElementById('newObs').value=""; render();
+      };
+      document.getElementById('reset').onclick = ()=>{
+        if(confirm('Réinitialiser cette page ?')){ page.observables.forEach(o=>{o.pos=0;o.neg=0;o.mastery='moyen';}); save(state); render(); }
+      };
+    });
+  </script>
+</head>
+<body>
+  <header class="header">
+    <div class="brand"><span id="crumb">EC</span> • <span id="title">PPSA</span></div>
+    <div class="row no-print">
+      <a class="btn" href="./index.html">Accueil</a>
+      <a class="btn btn-cta" href="./export.html">Exporter PDF</a>
+    </div>
+  </header>
+  <main class="main">
+    <section class="card">
+      <h2 class="section-title">Observables</h2>
+      <div class="row">
+        <input id="newObs" placeholder="Ajouter un observable">
+        <button id="addObs" class="btn btn-cta">➕ Ajouter</button>
+        <button id="reset" class="btn">↩︎ Reset</button>
+      </div>
+      <div id="obsList" class="obs-list" style="margin-top:12px"></div>
+    </section>
+  </main>
+</body>
+</html>

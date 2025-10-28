@@ -1,404 +1,53 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8" />
-  <title>EPS Observer — Page unique</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <style>
-    :root{
-      --bg:#F4F6F8;
-      --card:#fff;
-      --text:#0f172a;
-      --muted:#475569;
-      --border:#e5e7eb;
-      --green:#16a34a;
-      --red:#ef4444;
-      --amber:#f59e0b;
-      --blue:#2563eb;
-      --shadow:0 2px 12px rgba(15,23,42,.06);
-    }
-    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    html,body{height:100%}
-    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial}
-    .app{min-height:100%;display:flex;flex-direction:column}
-    .header{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--border);padding:10px 14px;display:flex;gap:8px;align-items:center;justify-content:space-between;box-shadow:var(--shadow)}
-    .brand{font-weight:800}
-    .btn{border:0;border-radius:16px;padding:12px 16px;cursor:pointer;font-weight:800;font-size:16px}
-    .btn:active{transform:scale(.98)}
-    .btn-green{background:var(--green);color:#fff}
-    .btn-blue{background:var(--blue);color:#fff}
-    .btn-gray{background:#e5e7eb}
-    .btn-red{background:var(--red);color:#fff}
-    .btn-ghost{background:transparent;border:1px solid var(--border)}
-    .main{flex:1;display:flex;flex-direction:column;gap:12px;padding:12px;max-width:980px;margin:0 auto}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:12px;box-shadow:var(--shadow)}
-    .muted{color:var(--muted);font-size:14px}
-    .row{display:flex;gap:10px;flex-wrap:wrap}
-    label{font-weight:700;font-size:14px}
-    input,select{padding:10px;border-radius:12px;border:1px solid var(--border);width:100%;font-size:16px;background:#fff}
-    .grid{display:grid;gap:10px}
-    .grid-2{grid-template-columns:1fr 1fr}
-    .grid-3{grid-template-columns:1fr 1fr 1fr}
-    @media (max-width:720px){.grid-2,.grid-3{grid-template-columns:1fr}}
-    /* Zones */
-    .zone{padding:8px}
-    .zone-title{font-weight:900;margin:0 0 6px 0;font-size:16px;letter-spacing:.2px}
-    /* Observables list */
-    .obs{display:flex;flex-direction:column;gap:10px}
-    .obs-item{display:grid;grid-template-columns:1fr auto auto auto auto;gap:8px;align-items:center;border:1px solid var(--border);padding:10px;border-radius:16px;background:#fff;touch-action:pan-y}
-    .obs-name{font-weight:700;font-size:18px}
-    .count{min-width:54px;text-align:center;border-radius:12px;padding:10px;border:1px solid var(--border);font-weight:800;font-size:18px}
-    .buzzer{width:60px;height:60px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:28px}
-    .buzzer:active{transform:scale(.96)}
-    /* Mastery bar */
-    .mastery{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-    .m-chip{border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center;font-weight:800;cursor:pointer}
-    .m-chip[data-v="fragile"]{background:#fee2e2}
-    .m-chip[data-v="moyen"]{background:#fef9c3}
-    .m-chip[data-v="bon"]{background:#dcfce7}
-    .m-chip[data-v="tb"]{background:#dbeafe}
-    .m-chip.active{outline:2px solid var(--blue)}
-    /* Print sheet */
-    @media print{
-      .header, #actions, #help {display:none !important}
-      body{background:#fff}
-      .card{box-shadow:none;border:0;padding:0}
-      .obs-item{border:1px solid #ddd}
-    }
-  </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>EPS Observer — Accueil</title>
+  <link rel="stylesheet" href="./assets/style.css">
+  <script type="module">
+    import {EXPERIENCES} from './assets/data.js';
+    import {load, save, makeNav} from './assets/app.js';
+    const state = load();
+    window.addEventListener('DOMContentLoaded', ()=>{
+      document.body.append(makeNav("Accueil"));
+      document.getElementById('observer').value = state.context.observer || "";
+      document.getElementById('group').value = state.context.group || "";
+      document.getElementById('observer').oninput = e=>{ state.context.observer=e.target.value; save(state); };
+      document.getElementById('group').oninput = e=>{ state.context.group=e.target.value; save(state); };
+      const box = document.getElementById('experiences');
+      EXPERIENCES.forEach(exp=>{
+        const sec = document.createElement('section'); sec.className="card";
+        sec.innerHTML = `<h2 class="section-title">${exp.icon} ${exp.id} — ${exp.label}</h2>`;
+        const grid = document.createElement('div'); grid.className="grid grid-3";
+        exp.ppsa.forEach(name=>{
+          const a = document.createElement('a'); a.className="tile"; a.href = `./page.html?exp=${encodeURIComponent(exp.id)}&ppsa=${encodeURIComponent(name)}`;
+          a.innerHTML = `<div class="big">${name}</div><div class="small">Ouvrir la page d'action</div>`;
+          grid.append(a);
+        });
+        sec.append(grid);
+        box.append(sec);
+      });
+    });
+  </script>
 </head>
 <body>
-<div class="app">
   <header class="header">
-    <div class="brand">EPS Observer</div>
-    <div class="row">
-      <button class="btn btn-gray" id="help">❓ Aide</button>
-      <button class="btn btn-blue" id="btnPdf">📄 Générer PDF</button>
+    <div class="brand">EPS Observer • Accueil</div>
+    <div class="row no-print">
+      <a class="btn btn-cta btn-pill" href="./export.html">Exporter PDF</a>
     </div>
   </header>
-
   <main class="main">
-    <!-- 🟥 Haut : Contexte -->
-    <section class="card zone" id="zone-top">
-      <p class="zone-title">Contexte</p>
-      <div class="grid grid-3">
-        <div>
-          <label>Champ d'apprentissage</label>
-          <select id="champ"></select>
-        </div>
-        <div>
-          <label>APSA</label>
-          <select id="apsa"></select>
-        </div>
-        <div>
-          <label>Observateur·rice</label>
-          <input id="observer" placeholder="Prénom" />
-        </div>
+    <section class="card">
+      <h2 class="section-title">Contexte</h2>
+      <div class="grid grid-2">
+        <div><label>Observateur·rice</label><input id="observer" placeholder="Prénom"></div>
+        <div><label>Groupe (prénoms, virgules)</label><input id="group" placeholder="ex: Alice, Bob"></div>
       </div>
-      <div class="grid grid-2" style="margin-top:8px">
-        <div>
-          <label>Groupe (prénoms, séparés par virgules)</label>
-          <input id="group" placeholder="ex : Alice, Bob" />
-        </div>
-        <div>
-          <label>Chrono (option)</label>
-          <div class="row">
-            <button class="btn btn-ghost" id="chronoStart">▶️ Start</button>
-            <button class="btn btn-ghost" id="chronoStop">⏸️ Stop</button>
-            <button class="btn btn-ghost" id="chronoReset">↩︎ Reset</button>
-            <span id="chrono" class="muted" aria-live="polite">00:00</span>
-          </div>
-        </div>
-      </div>
+      <p class="muted" style="margin-top:8px">Toutes les données restent en local (LocalStorage). Aucune donnée envoyée.</p>
     </section>
-
-    <!-- 🟨 Milieu : Observables -->
-    <section class="card zone" id="zone-middle">
-      <p class="zone-title">Observables (tap = + / swipe ← →)</p>
-      <div class="row" style="align-items:flex-end">
-        <div style="flex:1">
-          <input id="newObs" placeholder="Ajouter un observable (ex : Passe réussie)">
-        </div>
-        <button class="btn btn-green" id="addObs">➕ Ajouter</button>
-      </div>
-      <div id="obsList" class="obs" style="margin-top:10px"></div>
-    </section>
-
-    <!-- 🟩 Bas : Niveaux de Maîtrise -->
-    <section class="card zone" id="zone-bottom">
-      <p class="zone-title">Niveaux de maîtrise (par observable)</p>
-      <div id="masteryArea" class="grid"></div>
-    </section>
-
-    <section class="card" id="actions">
-      <div class="row">
-        <button class="btn btn-gray" id="clearAll">🧹 Réinitialiser</button>
-        <button class="btn btn-blue" id="saveSnap">💾 Enregistrer la session</button>
-      </div>
-      <p class="muted">Données stockées localement. Aucun envoi serveur.</p>
-    </section>
-
-    <section class="card" id="savedArea">
-      <h3>Sessions enregistrées</h3>
-      <div id="savedList"></div>
-    </section>
+    <div id="experiences"></div>
   </main>
-</div>
-
-<!-- Help modal (very simple) -->
-<dialog id="helpDlg">
-  <h3>Aide rapide</h3>
-  <ul>
-    <li>Reste sur <b>une seule page</b>. Tout se fait ici.</li>
-    <li>Appuie sur <b>+</b> (ou <b>swipe →</b>) pour comptabiliser un succès, sur <b>-</b> (ou <b>swipe ←</b>) pour un échec.</li>
-    <li>Choisis un <b>niveau de maîtrise</b> pour chaque observable.</li>
-    <li>Utilise <b>Générer PDF</b> pour la trace pédagogique (utilise l'impression PDF native d'iPad).</li>
-  </ul>
-  <form method="dialog"><button class="btn btn-blue">OK</button></form>
-</dialog>
-
-<script>
-// ===== Données officielles (extrait minimal) =====
-const SPORTS_DATA = {
-  CA1: { code:"CA1", nom:"Réaliser une performance motrice mesurable", apsas:[
-    {id:"athle", nom:"Athlétisme", observables:["Vitesse", "Endurance", "Qualité technique"]},
-    {id:"nat_vit", nom:"Natation de vitesse", observables:["Départ", "Technique de nage", "Virage"]},
-  ]},
-  CA2: { code:"CA2", nom:"Adapter ses déplacements", apsas:[
-    {id:"escalade", nom:"Escalade", observables:["Choix de trajectoire","Appuis","Prises"]},
-  ]},
-  CA4: { code:"CA4", nom:"Conduire un affrontement", apsas:[
-    {id:"basket", nom:"Basket-ball", observables:["Passe","Défense","Proposition d'attaque"]},
-    {id:"ultimate", nom:"Ultimate", observables:["Passe réussie","Passe perdue","Jeu dans l'axe","Disponibilité"]},
-  ]},
-};
-
-// ===== Etat & stockage local =====
-const STORAGE_KEY = "eps_observer_page_unique_v1";
-let state = {
-  champ: "CA4",
-  apsa: "ultimate",
-  observer: "",
-  group: "",
-  observables: [], // {id, text, pos, neg, mastery}
-  saved: [],
-};
-function load(){ try{ const raw = localStorage.getItem(STORAGE_KEY); if(raw) state = JSON.parse(raw); }catch(e){} }
-function persist(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-
-// ===== Utilitaires DOM =====
-const $ = (sel) => document.querySelector(sel);
-const $$ = (sel) => [...document.querySelectorAll(sel)];
-function el(tag, props={}, children=[]){ const e=document.createElement(tag); Object.assign(e, props); (children||[]).forEach(c=> e.append(c.nodeType?c:document.createTextNode(c))); return e; }
-function uid(){ return Math.random().toString(36).slice(2); }
-
-// ===== Initialisation des menus =====
-function initSelectors(){
-  const champSel = $("#champ");
-  champSel.innerHTML = "";
-  Object.values(SPORTS_DATA).forEach(c => {
-    const opt = el("option", {value: c.code}, [c.code + " • " + c.nom]);
-    champSel.append(opt);
-  });
-  champSel.value = state.champ;
-  champSel.onchange = () => { state.champ = champSel.value; buildApsa(); persist(); };
-
-  buildApsa();
-}
-function buildApsa(){
-  const apsaSel = $("#apsa");
-  apsaSel.innerHTML = "";
-  const list = SPORTS_DATA[state.champ].apsas || [];
-  list.forEach(a => { apsaSel.append(el("option", {value:a.id}, [a.nom])); });
-  apsaSel.value = state.apsa = (list.find(a=>a.id===state.apsa)?.id || list[0]?.id || "");
-  apsaSel.onchange = () => { state.apsa = apsaSel.value; // propose defaults
-    const a = SPORTS_DATA[state.champ].apsas.find(x=>x.id===state.apsa);
-    if(a){ state.observables = a.observables.map(t => ({id:uid(), text:t, pos:0, neg:0, mastery:"moyen"})); renderObs(); }
-    persist();
-  };
-}
-
-// ===== Observables (A+C : boutons ronds + swipe) =====
-function addObservable(text){
-  state.observables.push({id: uid(), text, pos:0, neg:0, mastery:"moyen"});
-  persist(); renderObs();
-}
-function removeObservable(id){
-  state.observables = state.observables.filter(o=>o.id!==id);
-  persist(); renderObs();
-}
-function renderObs(){
-  const list = $("#obsList"); list.innerHTML = "";
-  const masteryArea = $("#masteryArea"); masteryArea.innerHTML = "";
-
-  state.observables.forEach(o => {
-    // Ligne observables : nom + mastery mini + + count - count (swipe support)
-    const row = el("div", {className:"obs-item", "data-id": o.id});
-    const name = el("div", {className:"obs-name"}, [o.text]);
-    const msel = miniMastery(o);
-    const plusBtn = el("button", {className:"btn buzzer btn-green", "aria-label":"ajouter +1"}, ["+"]);
-    const pos = el("div", {className:"count"}, [String(o.pos)]);
-    const minusBtn = el("button", {className:"btn buzzer btn-red", "aria-label":"retirer -1"}, ["-"]);
-    const neg = el("div", {className:"count"}, [String(o.neg)]);
-
-    plusBtn.onclick = () => { o.pos++; pos.textContent=o.pos; persist(); };
-    minusBtn.onclick = () => { o.neg++; neg.textContent=o.neg; persist(); };
-
-    // Swipe gestures (← = -, → = +)
-    let sx=null, sy=null, moved=false;
-    row.addEventListener("touchstart", (e)=>{ const t=e.changedTouches[0]; sx=t.clientX; sy=t.clientY; moved=false; }, {passive:true});
-    row.addEventListener("touchmove", ()=>{ moved=true; }, {passive:true});
-    row.addEventListener("touchend", (e)=>{
-      if(sx==null) return;
-      const t=e.changedTouches[0]; const dx=t.clientX - sx; const dy=t.clientY - sy;
-      if(Math.abs(dx) > 30 && Math.abs(dy) < 40){ // horizontal swipe
-        if(dx>0){ o.pos++; pos.textContent=o.pos; }
-        else{ o.neg++; neg.textContent=o.neg; }
-        persist();
-      }
-      sx=sy=null;moved=false;
-    }, {passive:true});
-
-    row.append(name, msel, plusBtn, pos, minusBtn, neg);
-    list.append(row);
-
-    // Zone maîtrise complète
-    masteryArea.append(fullMastery(o));
-  });
-}
-function miniMastery(o){
-  const wrap = el("div", {className:"row"});
-  ["fragile","moyen","bon","tb"].forEach(v=>{
-    const b = el("button", {className: "btn btn-ghost" + (o.mastery===v ? " btn-blue":"")}, [v]);
-    b.onclick = () => { o.mastery=v; renderObs(); persist(); };
-    wrap.append(b);
-  });
-  return wrap;
-}
-function fullMastery(o){
-  const card = el("div", {className:"card"});
-  card.append(el("div", {style:"font-weight:900;margin-bottom:6px"}, [o.text]));
-  const bar = el("div", {className:"mastery"});
-  [["fragile","🔴 Fragile"],["moyen","🟡 Moyen"],["bon","🟢 Bon"],["tb","🔵 Très Bon"]].forEach(([v,label])=>{
-    const chip = el("div", {className:"m-chip"+(o.mastery===v?" active":""), "data-v":v});
-    chip.textContent = label;
-    chip.onclick = () => { o.mastery=v; renderObs(); persist(); };
-    bar.append(chip);
-  });
-  card.append(bar);
-  return card;
-}
-
-// ===== Sauvegarde / Sessions =====
-function renderSaved(){
-  const box = $("#savedList"); box.innerHTML="";
-  if(!state.saved.length){ box.append(el("div", {}, ["Aucune session enregistrée"])); return; }
-  state.saved.forEach(s=>{
-    const c = el("div", {className:"card"});
-    c.append(el("div", {}, [`#${s.id} — ${s.context.apsaName} — ${new Date(s.date).toLocaleString()}`]));
-    c.append(el("div", {}, [`Observateur: ${s.context.observer} • Groupe: ${s.context.group.join(", ")}`]));
-    s.observables.forEach(o=> c.append(el("div", {className:"muted"}, [`${o.text} — +:${o.pos} / -:${o.neg} — niveau: ${o.mastery}`])));
-    const del = el("button", {className:"btn btn-ghost"}, ["🗑️ Supprimer"]);
-    del.onclick = ()=>{ state.saved = state.saved.filter(x=>x.id!==s.id); persist(); renderSaved(); };
-    c.append(del);
-    box.append(c);
-  });
-}
-$("#saveSnap").onclick = () => {
-  const ctx = getContext();
-  if(!ctx.observer) { alert("Renseigne le nom de l'observateur·rice."); return; }
-  const entry = {
-    id: "sess_"+Date.now(),
-    date: new Date().toISOString(),
-    context: ctx,
-    observables: state.observables.map(o=>({...o})),
-  };
-  state.saved.push(entry); persist(); renderSaved();
-  alert("Session enregistrée localement.");
-};
-
-// ===== Contexte & chrono =====
-function getContext(){
-  return {
-    champ: $("#champ").value,
-    apsa: $("#apsa").value,
-    apsaName: $("#apsa").selectedOptions[0]?.textContent || "",
-    observer: $("#observer").value.trim(),
-    group: $("#group").value.split(/[;,]+/).map(s=>s.trim()).filter(Boolean),
-    chrono: $("#chrono").textContent
-  };
-}
-let t0=null, tid=null;
-function tick(){
-  const d = (Date.now()-t0)/1000|0; const m = String((d/60)|0).padStart(2,"0"); const s = String(d%60).padStart(2,"0");
-  $("#chrono").textContent = m+":"+s;
-}
-$("#chronoStart").onclick = ()=>{ if(tid) return; t0 = Date.now()-parseInt($("#chrono").textContent.split(":")[0])*60000; tid = setInterval(tick, 250); };
-$("#chronoStop").onclick = ()=>{ clearInterval(tid); tid=null; };
-$("#chronoReset").onclick = ()=>{ $("#chrono").textContent="00:00"; t0=Date.now(); };
-
-// ===== Ajout / suppression observables =====
-$("#addObs").onclick = ()=>{
-  const t = $("#newObs").value.trim();
-  if(!t) return;
-  addObservable(t);
-  $("#newObs").value="";
-};
-
-$("#clearAll").onclick = ()=>{
-  if(confirm("Tout réinitialiser (observables & compteurs) ?")){
-    const a = SPORTS_DATA[state.champ].apsas.find(x=>x.id===state.apsa);
-    state.observables = (a?.observables || []).map(t=>({id:uid(), text:t, pos:0, neg:0, mastery:"moyen"}));
-    persist(); renderObs();
-  }
-};
-
-// ===== PDF (impression native) =====
-$("#btnPdf").onclick = ()=>{
-  // Génère une feuille de bilan compacte avant impression
-  const ctx = getContext();
-  const w = window.open("", "_blank");
-  w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Bilan EPS</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto;margin:24px}
-    h1{font-size:20px;margin:0 0 8px 0}
-    table{border-collapse:collapse;width:100%}
-    th,td{border:1px solid #ddd;padding:8px;text-align:left}
-    th{background:#f3f4f6}
-  </style></head><body>`);
-  w.document.write(`<h1>Bilan d'observation — ${ctx.apsaName}</h1>`);
-  w.document.write(`<div><b>Date:</b> ${new Date().toLocaleString()} • <b>Champ:</b> ${ctx.champ} • <b>Observateur:</b> ${ctx.observer}</div>`);
-  w.document.write(`<div><b>Groupe:</b> ${ctx.group.join(", ")} • <b>Chrono:</b> ${ctx.chrono}</div>`);
-  w.document.write(`<table><thead><tr><th>Observable</th><th>+</th><th>-</th><th>Niveau</th></tr></thead><tbody>`);
-  state.observables.forEach(o=>{
-    w.document.write(`<tr><td>${o.text}</td><td>${o.pos}</td><td>${o.neg}</td><td>${o.mastery}</td></tr>`);
-  });
-  w.document.write(`</tbody></table>`);
-  w.document.write(`</body></html>`);
-  w.document.close();
-  w.focus();
-  w.print();
-};
-
-// ===== Aide =====
-$("#help").onclick = ()=> document.getElementById("helpDlg").showModal();
-
-// ===== Boot =====
-load();
-initSelectors();
-// seed defaults if empty
-if(!state.observables.length){
-  const a = SPORTS_DATA[state.champ].apsas.find(x=>x.id===state.apsa);
-  state.observables = (a?.observables || []).map(t=>({id:uid(), text:t, pos:0, neg:0, mastery:"moyen"}));
-}
-$("#observer").value = state.observer || "";
-$("#group").value = state.group || "";
-$("#observer").oninput = e=>{ state.observer = e.target.value; persist(); };
-$("#group").oninput = e=>{ state.group = e.target.value; persist(); };
-renderObs();
-renderSaved();
-</script>
 </body>
 </html>
