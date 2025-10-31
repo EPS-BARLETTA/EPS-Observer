@@ -26,7 +26,7 @@
     .app{min-height:100dvh;display:flex;flex-direction:column}
     .header{position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;gap:8px;align-items:center;justify-content:space-between;z-index:10;box-shadow:var(--shadow)}
     .right{display:flex;gap:8px;align-items:center}
-    .btn{border:0;border-radius:12px;padding:10px 16px;cursor:pointer;font-weight:700;letter-spacing:.2px;box-shadow:var(--shadow)}
+    .btn{border:0;border-radius:12px;padding:10px 16px;cursor:pointer;font-weight:700;letter-spacing:.2px;box-shadow:var(--shadow); -webkit-tap-highlight-color:transparent; touch-action: manipulation;}
     .btn-green{background:var(--green);color:#fff}
     .btn-green-dark{background:var(--green-dark);color:#fff}
     .btn-blue{background:var(--blue);color:#fff}
@@ -384,7 +384,7 @@ function hardReset(){
     if(app && app.timer && app.timer.handle){ clearInterval(app.timer.handle); app.timer.handle = null; }
   }catch(e){}
   try{
-    localStorage.clear(); // clear for this origin
+    localStorage.clear();
   }catch(e){}
   try{
     window.location.replace(window.location.href);
@@ -578,14 +578,32 @@ function renderObserve(){
     row.append(name, colMinus, colPlus);
     if(showLevels || showNotes){
       const extra=document.createElement("div"); extra.className="obs-extra";
-      const levels = document.createElement("div"); levels.className="fmb";
+
+      /* --- FIX iPad : niveaux robustes au tap (touchstart+preventDefault) et MAJ locale --- */
+      const levels = document.createElement("div");
+      levels.className="fmb";
       if(showLevels){
-        [["fragile","🔴 Fragile"],["moyen","🟡 Moyen"],["bon","🟢 Bon"],["tb","🟩 Très bon"]].forEach(([v,lab])=>{
-          const b=document.createElement("button"); b.textContent=lab; if(it.level===v) b.classList.add("active");
-          b.onclick=()=>{ it.level=v; renderObserve(); save(); };
+        const opts=[["fragile","🔴 Fragile"],["moyen","🟡 Moyen"],["bon","🟢 Bon"],["tb","🟩 Très bon"]];
+        opts.forEach(([v,lab])=>{
+          const b=document.createElement("button");
+          b.type="button";
+          b.textContent=lab;
+          if(it.level===v) b.classList.add("active");
+          const activate=()=>{
+            if(it.level===v) return;
+            it.level=v;
+            // MAJ visuelle locale sans re-render global
+            levels.querySelectorAll("button").forEach(x=>x.classList.remove("active"));
+            b.classList.add("active");
+            save();
+          };
+          b.addEventListener("touchstart",(e)=>{ e.preventDefault(); activate(); }, {passive:false});
+          b.addEventListener("click", activate);
           levels.appendChild(b);
         });
       }
+      /* --- FIN FIX --- */
+
       const noteWrap=document.createElement("div");
       if(showNotes){
         const input=document.createElement("input"); input.className="note"; input.placeholder="Note/temps (ex: 12''3, 1'05'', consigne…)"; input.value = it.note||""; input.oninput = (e)=>{ it.note = e.target.value; save(); };
