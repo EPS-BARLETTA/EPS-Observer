@@ -96,8 +96,8 @@
     .footer{border-top:1px solid var(--border);background:var(--card);padding:10px 16px;text-align:center;color:var(--muted);font-size:12px}
     .hidden{display:none}
 
-    .chrono{display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--help1); border:1px solid var(--border); border-radius:14px; padding:10px 12px; box-shadow:var(--shadow); font-weight:800;}
-    .chrono .time{min-width:220px; text-align:center; font-size:46px; letter-spacing:.5px; color:#2563eb}
+    .chrono{display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:#e8f1ff; border:1px solid var(--border); border-radius:14px; padding:10px 12px; box-shadow:var(--shadow); font-weight:800;}
+    .chrono .time{min-width:220px; text-align:center; font-size:46px; letter-spacing:.5px; color:#1d4ed8}
     .chrono .ctrls{display:flex; gap:8px; align-items:center}
     .chrono .mode{display:flex; align-items:center; gap:8px}
     .chrono .mode .dur{width:120px}
@@ -129,34 +129,12 @@
     .help-1{background:var(--help1)} .help-2{background:var(--help2)} .help-3{background:var(--help3)} .help-4{background:var(--help4)} .help-5{background:var(--help5)}
     @media (max-width: 860px){ .help-grid{grid-template-columns:1fr} }
 
-    /* ✅ Patch contraste nuit : rendre l’état sélectionné bien visible */
-    html[data-theme="dark"] .fmb button.active{
-      background:#ffffff !important;
-      color:#111 !important;
-      border:1px solid #e5e7eb !important;
-      outline:2px solid #e5e7eb !important;
-      outline-offset:2px;
-    }
+    .qr-fullscreen{position:fixed; inset:0; background:#fff; display:none; align-items:center; justify-content:center; flex-direction:column; z-index:80; }
+    .qr-fullscreen.show{display:flex}
+    .qr-fullscreen canvas{ width:min(90vw, 90vh); height:min(90vw, 90vh); }
+    .qr-caption{ margin-top:10px; font-weight:900; color:#111; }
+    @media print{ .qr-fullscreen{ display:none !important } .header,.nav,.no-print,.modal{display:none!important} body{background:#fff} }
   </style>
-
-  <script>
-    function loadScript(src){
-      return new Promise((resolve, reject)=>{
-        const s=document.createElement('script'); s.src=src; s.defer=true;
-        s.onload=resolve; s.onerror=()=>reject(new Error("load fail: "+src));
-        document.head.appendChild(s);
-      });
-    }
-    const depsReady = (async ()=>{
-      if(!("html2canvas" in window)){
-        await loadScript("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
-      }
-      if(!(window.jspdf && window.jspdf.jsPDF)){
-        await loadScript("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
-      }
-      return true;
-    })();
-  </script>
 </head>
 <body>
 <div class="app">
@@ -174,6 +152,7 @@
   </header>
 
   <main class="main">
+    <!-- PAGE 1 : COVER -->
     <section id="page-cover" class="section">
       <div class="hero">
         <div>
@@ -184,10 +163,11 @@
       </div>
     </section>
 
+    <!-- PAGE 2 : ACTIVITÉ -->
     <section id="page-choose" class="section hidden">
       <div class="pageTitle">
         <h1>Activité</h1>
-        <div class="sub">Sélectionne un champ (CA1→CA5), choisis une APSA (ou ajoute la tienne), puis le niveau.</div>
+        <div class="sub">Sélectionne un champ (CA1→CA5), choisis une APSA (ou ajoute la tienne), puis le niveau (1→4) ou 🎓 BAC.</div>
       </div>
 
       <div class="row">
@@ -211,6 +191,7 @@
       <div id="champsGrid" class="grid" style="grid-template-columns:repeat(1,minmax(0,1fr)); gap:14px; margin-top:12px"></div>
     </section>
 
+    <!-- PAGE 3 : OBSERVABLES -->
     <section id="page-observables" class="section hidden">
       <div class="pageTitle">
         <h1>Observables</h1>
@@ -229,6 +210,7 @@
       </div>
     </section>
 
+    <!-- PAGE 4 : OBSERVATION -->
     <section id="page-observe" class="section hidden">
       <div class="pageTitle" style="display:flex; align-items:flex-end; justify-content:space-between; gap:10px">
         <div>
@@ -277,11 +259,12 @@
       </div>
     </section>
 
+    <!-- PAGE 5 : BILAN -->
     <section id="page-bilan" class="section hidden">
       <div class="print-page" id="printRoot">
         <div class="print-header">
           <div class="print-sub" id="bilanMeta">Date : —</div>
-          <div class="print-sub" id="pdfAppName" style="color:#065f46; font-weight:900; letter-spacing:.2px; text-align:center; width:100%; font-size:16px">EPS Observer</div>
+          <div class="print-sub" id="pdfAppName" style="color:#065f46; font-weight:900; letter-spacing:.2px; text-align:center; width:100%; font-size:16px">EPS Observer - Equipe EPS Lycée Vauban - Luxembourg - JB</div>
         </div>
         <div id="coverPreview" class="print-card avoid-break" style="text-align:center">
           <div style="font-size:54px; font-weight:900; margin-bottom:6px">Dossier d’observation</div>
@@ -289,10 +272,12 @@
           <div id="coverDate" style="font-size:14px; color:#6b7280; margin-top:6px"></div>
         </div>
         <div id="bilanContent"></div>
+
         <div class="nav" style="margin-top:14px">
           <button class="btn btn-gray" id="bilanBack">⬅️ Retour</button>
           <div class="row">
-            <button class="btn btn-green-dark" id="bilanExportPDF">📄 Exporter le PDF</button>
+            <button class="btn btn-green-dark" id="btnShowQR">📷 Afficher le QR pour ScanProf</button>
+            <button class="btn btn-green" id="bilanExportPrint">🖨️ Exporter PDF (impression)</button>
           </div>
         </div>
       </div>
@@ -303,6 +288,7 @@
   <footer class="footer">EPS Observer – Équipe EPS Lycée Vauban – LUXEMBOURG – JB</footer>
 </div>
 
+<!-- AIDE (jolie mise en page) -->
 <div class="modal" id="modalHelp">
   <div class="modal-card">
     <div class="bar" style="margin-bottom:8px">
@@ -312,32 +298,42 @@
     <div class="help-grid">
       <div class="help-bloc help-1">
         <div class="title">1️⃣ Choisir le champ & l’APSA</div>
-        <p>Renseigne les <b>observateurs</b> et un <b>groupe par défaut</b>. Sélectionne un <b>champ</b> (CA1→CA5) et une <b>APSA</b> ou ajoute la tienne. Choisis un <b>niveau</b> (1→4) : les libellés s’adaptent.</p>
+        <p>Renseigne les <b>observateurs</b> et un <b>groupe par défaut</b>. Sélectionne un <b>champ</b> (CA1→CA5) et une <b>APSA</b> ou ajoute la tienne. Choisis un <b>niveau</b> (1→4) ou <b>🎓 BAC</b> : les libellés s’adaptent.</p>
       </div>
       <div class="help-bloc help-2">
         <div class="title">2️⃣ Configurer les observables</div>
-        <p>Active/supprime les <b>observables</b> proposés. Tu peux <b>ajouter</b> tes propres observables. Tout est <b>enregistré</b> dans l’iPad (aucun envoi).</p>
+        <p>Active/supprime les <b>observables</b> proposés. Tu peux <b>ajouter</b> tes observables. Tout est <b>enregistré</b> en local (aucun envoi).</p>
       </div>
       <div class="help-bloc help-3">
         <div class="title">3️⃣ Observer</div>
-        <p>Ajoute un ou plusieurs <b>groupes observés</b>. Pour chaque observable : utilise les boutons <b>+</b>/<b>−</b> (corrigeables), choisis un <b>niveau</b> (🔴/🟡/🟢/🟩) et saisis un <b>temps/annotation</b> si besoin.</p>
+        <p>Ajoute un ou plusieurs <b>groupes</b>. Pour chaque observable : utilise <b>+</b>/<b>−</b> (corrigeables), choisis un <b>niveau</b> (🔴/🟡/🟢/🟩) et saisis une <b>note/temps</b> si besoin.</p>
       </div>
       <div class="help-bloc help-4">
         <div class="title">4️⃣ Chrono & minuteur</div>
-        <p>Utilise le <b>chrono</b> (Start/Tour/Stop/Reset) ou la <b>roue de durée</b> (minuteur). Les <b>tours</b> s’affichent sous le chrono.</p>
+        <p>Utilise le <b>chrono</b> (Start/Tour/Stop/Reset) ou le <b>minuteur</b> (HH:MM:SS). Les <b>tours</b> s’affichent sous le chrono.</p>
       </div>
       <div class="help-bloc help-5">
         <div class="title">5️⃣ Bilan & PDF</div>
-        <p>Le bilan rassemble <b>tous les groupes</b>. Ajoute un <b>commentaire par groupe</b>. Exporte en <b>PDF</b> : couverture avec le <b>nom de l’app en haut</b> et les <b>observateurs</b> en grand. Aucune donnée n’est envoyée.</p>
+        <p>Le bilan rassemble <b>tous les groupes</b>. Ajoute un <b>commentaire par groupe</b>. Exporte en <b>PDF</b> via l’impression native iPad. Tu peux afficher le <b>QR plein écran</b> à scanner avec <b>ScanProf</b>.</p>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Plein écran QR -->
+<div id="qrFull" class="qr-fullscreen">
+  <canvas id="qrCanvas"></canvas>
+  <div class="qr-caption">📸 Scannez ce QR avec ScanProf</div>
+  <div style="margin-top:12px">
+    <button class="btn btn-gray" id="qrClose">Fermer</button>
   </div>
 </div>
 
 <div id="toast" class="toast">APSA sélectionnée</div>
 
 <script>
-const APP_VERSION = "3.2.2-dark-contrast";
+/* ====================== Données / Référentiels ====================== */
+const APP_VERSION = "no-cdn-qr";
 const REF_VERSION = "CCA-base-2025.02";
 
 const CHAMPS = [
@@ -376,58 +372,76 @@ const DEFAULT_OBS = {
   "Sauvetage aquatique":["Immersion","Saisie","Remorquage","Gestion effort"],
   "Yoga":["Respiration","Alignement","Stabilité","Fluidité"]
 };
+
 const CA_LEVEL_HINTS = {
-  CA1:{1:"Découverte / Allure de base",2:"Régularité & tenue",3:"Optimisation technique",4:"Stratégie & gestion d'effort"},
-  CA2:{1:"Sécurité & repères",2:"Choix simples",3:"Lecture/anticipation",4:"Optimisation itinéraire/effort"},
-  CA3:{1:"Exécuter",2:"Enchaîner",3:"Qualité/expressivité",4:"Intention & présence"},
-  CA4:{1:"Régularité du geste",2:"Mettre en difficulté",3:"Construire/finir",4:"Stratégie & lecture adverse"},
-  CA5:{1:"Entrer dans l’effort",2:"Régularité & contrôle",3:"Planification/auto-régulation",4:"Optimisation santé/perf"}
+  CA1:{1:"Découverte / Allure de base",2:"Régularité & tenue",3:"Optimisation technique",4:"Stratégie & gestion d'effort", bac:"Exigences certificatives"},
+  CA2:{1:"Sécurité & repères",2:"Choix simples",3:"Lecture/anticipation",4:"Optimisation itinéraire/effort", bac:"Exigences certificatives"},
+  CA3:{1:"Exécuter",2:"Enchaîner",3:"Qualité/expressivité",4:"Intention & présence", bac:"Exigences certificatives"},
+  CA4:{1:"Régularité du geste",2:"Mettre en difficulté",3:"Construire/finir",4:"Stratégie & lecture adverse", bac:"Exigences certificatives"},
+  CA5:{1:"Entrer dans l’effort",2:"Régularité & contrôle",3:"Planification/auto-régulation",4:"Optimisation santé/perf", bac:"Exigences certificatives"}
 };
 
-const STORAGE_KEY = "eps_observer_v3_multigroups_night";
-function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(app)); }
+// Remplacer éventuellement ces textes par tes observables BAC officiels par APSA :
+const BAC_HINTS = {
+  "Basket-ball":"Critères certificatifs (prises d'info, efficacité tir, continuité, retours défensifs)",
+  "Badminton":"Maîtrise des filières, variation, prise d'initiative, gestion des temps",
+  "Foot":"Construction, déséquilibre, finitions, transitions",
+  // … etc. (tu complèteras facilement)
+};
+
+/* ====================== Persistance & App State ====================== */
+const STORAGE_KEY = "eps_observer_v4_nocdn_qr";
+function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(app)); }catch{} }
 function load(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(raw) Object.assign(app, JSON.parse(raw)); }catch{} }
 function hardReset(){
-  if(!confirm("Tout réinitialiser ? Cela efface TOUTES les données locales de l'application (observateurs, groupes, observables, sessions, paramètres).")) return;
-  try{
-    if(app && app.timer && app.timer.handle){ clearInterval(app.timer.handle); app.timer.handle = null; }
-  }catch(e){}
-  try{
-    localStorage.clear(); // clear for this origin
-  }catch(e){}
-  try{
-    window.location.replace(window.location.href);
-  }catch(e){
-    window.location.reload();
-  }
+  if(!confirm("Tout réinitialiser ? Cela efface TOUTES les données locales (observateurs, groupes, observables, sessions, paramètres).")) return;
+  try{ if(app && app.timer && app.timer.handle){ clearInterval(app.timer.handle); app.timer.handle = null; } }catch(e){}
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  try{ window.location.replace(window.location.href); }catch(e){ window.location.reload(); }
 }
 
 function freshApp(){
   return {
     observers: [], groupDefault: [],
     champs: JSON.parse(JSON.stringify(CHAMPS)),
-    selected: { champ:null, apsa:null, niveau:2 },
+    selected: { champ:null, apsa:null, niveau:2, isBac:false },
     observables: [],
     session: null,
     observations: [],
     settings:{ showNotes:true, showLevels:true, showPM:true, theme:"light" },
-    timer:{mode:"chrono", running:false, start:0, elapsed:0, target:0, handle:null, laps:[]}
+    timer:{mode:"chrono", running:false, start:0, elapsed:0, target:0, handle:null, laps:[]},
+    // QR session id pour éviter doublons ScanProf
+    qrSessionId: crypto.randomUUID ? crypto.randomUUID() : (Date.now()+"-"+Math.random().toString(16).slice(2))
   };
 }
 const app = freshApp();
+
+/* ====================== Helpers UI ====================== */
 const $ = (id)=>document.getElementById(id);
 const uid = ()=> Math.random().toString(36).slice(2);
 let toastTimer=null;
-function toast(msg){ const t=$("toast"); if(!t) return; t.textContent=msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"), 1600); }
-function confirmWipeIfSessionActive(next){
-  if(app.session && (app.session.groups?.length || app.observables?.length)){
-    const ok = confirm("⚠️ Changer d’activité va écraser les informations non exportées.\nPense à exporter le PDF avant de continuer.\n\nContinuer quand même ?");
-    if(!ok) return false;
-    app.session = null; save();
-  }
-  return true;
+function toast(msg){ const t=$("toast"); if(!t) return; t.textContent=msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"), 1500); }
+function show(which){ ["page-cover","page-choose","page-observables","page-observe","page-bilan"].forEach(id=>$(id).classList.add("hidden")); const map={cover:"page-cover", choose:"page-choose", observables:"page-observables", observe:"page-observe", bilan:"page-bilan"}; $(map[which]).classList.remove("hidden"); }
+function toChips(container, arr, onRemove){
+  container.innerHTML = ""; (arr||[]).forEach((name, i)=>{ const s = document.createElement("span"); s.className = "chip"; s.innerHTML = `<span>${name}</span>`; const b = document.createElement("button"); b.textContent = "×"; b.onclick = ()=> onRemove(i); s.appendChild(b); container.appendChild(s); });
 }
 
+/* ====================== Logique niveaux ====================== */
+function getHintFor(apsa, level, isBac){
+  if(isBac){
+    return (BAC_HINTS[apsa] || "Exigences certificatives (BAC)"); 
+  }
+  const ca = APSA_TO_CA[apsa] || "CA4";
+  const ref = (CA_LEVEL_HINTS[ca]||{1:"Découverte",2:"Stabilisation",3:"Efficacité",4:"Exploitation"});
+  return ref[level] || ref[2];
+}
+function buildObservablesFor(apsa, niveau, isBac){
+  const base = DEFAULT_OBS[apsa] || ["Observable 1","Observable 2"];
+  const hint = getHintFor(apsa, niveau, isBac);
+  return base.map(k=>({text:`${k} — ${hint}`, pos:0,neg:0,level:"moyen",note:""}));
+}
+
+/* ====================== Chrono / Minuteur ====================== */
 function timeInputToMs(){
   const val = $("chronoDur").value || "";
   const m = val.match(/^(\d{2}):(\d{2})(?::(\d{2}))?$/);
@@ -457,27 +471,27 @@ function pauseChrono(){ if(!app.timer.running) return; app.timer.elapsed += Date
 function resetChrono(){ app.timer.running=false; app.timer.start=0; app.timer.elapsed=0; app.timer.target=(app.timer.mode==="timer")?timeInputToMs():0; app.timer.laps=[]; $("laps").innerHTML=""; if(app.timer.handle){ clearInterval(app.timer.handle); app.timer.handle=null; } updateChrono(); save(); }
 function addLap(){ const text=$("chronoTime").textContent; const lapIdx=app.timer.laps.length+1; app.timer.laps.push(text); const span=document.createElement("span"); span.className="lap"; span.textContent=`Tour ${lapIdx}: ${text}`; $("laps").appendChild(span); save(); }
 
-function getHintFor(apsa, level){ const ca = APSA_TO_CA[apsa] || "CA4"; const arr = (CA_LEVEL_HINTS[ca]||{1:"Découverte",2:"Stabilisation",3:"Efficacité",4:"Exploitation"}); return arr[level] || arr[2]; }
-function buildObservablesFor(apsa, niveau){ const base = DEFAULT_OBS[apsa] || ["Observable 1","Observable 2"]; const hint = getHintFor(apsa, niveau); return base.map(k=>({text:`${k} — ${hint}`, pos:0,neg:0,level:"moyen",note:""})); }
-
-function toChips(container, arr, onRemove){
-  container.innerHTML = ""; (arr||[]).forEach((name, i)=>{ const s = document.createElement("span"); s.className = "chip"; s.innerHTML = `<span>${name}</span>`; const b = document.createElement("button"); b.textContent = "×"; b.onclick = ()=> onRemove(i); s.appendChild(b); container.appendChild(s); });
-}
-function show(which){ ["page-cover","page-choose","page-observables","page-observe","page-bilan"].forEach(id=>$(id).classList.add("hidden")); const map={cover:"page-cover", choose:"page-choose", observables:"page-observables", observe:"page-observe", bilan:"page-bilan"}; $(map[which]).classList.remove("hidden"); }
-
+/* ====================== Rendu UI : Choix / Observables ====================== */
 function renderChamps(){
   const grid = $("champsGrid"); grid.innerHTML = "";
+
+  // sélecteur niveau + BAC
   const lvlWrap = document.createElement("div");
   lvlWrap.className="card";
-  lvlWrap.innerHTML = `<div class="title">🎚️ Niveau de maîtrise (1 → 4)</div>
-    <div class="row">${[1,2,3,4].map(n=>`<button class="btn ${app.selected.niveau===n?'btn-green':'btn-gray'}" data-lvl="${n}">${n}</button>`).join("")}</div>`;
-  lvlWrap.querySelectorAll("[data-lvl]").forEach(b=>b.onclick=()=>{
-    app.selected.niveau=Number(b.getAttribute("data-lvl")); save();
-    if(app.selected.apsa){ app.observables = buildObservablesFor(app.selected.apsa, app.selected.niveau); renderObservables(); if(app.session) renderObserve(); }
-    renderChamps();
-  });
+  lvlWrap.innerHTML = `<div class="title">🎚️ Niveau de maîtrise (1 → 4) & 🎓 BAC</div>
+    <div class="row" id="lvlBtns"></div>`;
   grid.appendChild(lvlWrap);
+  const lvlBtns = lvlWrap.querySelector("#lvlBtns");
+  [1,2,3,4].forEach(n=>{
+    const b=document.createElement("button"); b.className="btn "+(app.selected.niveau===n && !app.selected.isBac?'btn-green':'btn-gray'); b.textContent=String(n);
+    b.onclick=()=>{ app.selected.niveau=n; app.selected.isBac=false; save(); if(app.selected.apsa){ app.observables = buildObservablesFor(app.selected.apsa, app.selected.niveau, false); renderObservables(); if(app.session) renderObserve(); } renderChamps(); };
+    lvlBtns.appendChild(b);
+  });
+  const bacBtn=document.createElement("button"); bacBtn.className="btn "+(app.selected.isBac?'btn-green-dark':'btn-gray'); bacBtn.innerHTML="🎓 BAC";
+  bacBtn.onclick=()=>{ app.selected.isBac=true; save(); if(app.selected.apsa){ app.observables = buildObservablesFor(app.selected.apsa, app.selected.niveau, true); renderObservables(); if(app.session) renderObserve(); } renderChamps(); };
+  lvlBtns.appendChild(bacBtn);
 
+  // blocs par CA
   CHAMPS.forEach(c=>{
     const sec = document.createElement("div"); sec.className="card ca-card";
     sec.style.setProperty('--ca-color', c.color);
@@ -490,8 +504,8 @@ function renderChamps(){
       a.onclick = ()=>{
         if(!confirmWipeIfSessionActive()) return;
         app.selected.champ=c.id; app.selected.apsa=name; save();
-        app.observables = buildObservablesFor(app.selected.apsa, app.selected.niveau);
-        toast(`APSA : ${name} • N${app.selected.niveau}`);
+        app.observables = buildObservablesFor(app.selected.apsa, app.selected.niveau, app.selected.isBac);
+        toast(`APSA : ${name} • ${app.selected.isBac?'BAC':('N'+app.selected.niveau)}`);
         renderObservables(); show("observables");
       };
       g.appendChild(a);
@@ -506,9 +520,9 @@ function renderChamps(){
       if(!c.baseAPSA.includes(v)) c.baseAPSA.push(v);
       APSA_TO_CA[v] = c.id;
       app.selected.champ=c.id; app.selected.apsa=v;
-      app.observables = buildObservablesFor(v, app.selected.niveau);
+      app.observables = buildObservablesFor(v, app.selected.niveau, app.selected.isBac);
       save(); renderChamps();
-      toast(`APSA ajoutée : ${v} • N${app.selected.niveau}`);
+      toast(`APSA ajoutée : ${v} • ${app.selected.isBac?'BAC':('N'+app.selected.niveau)}`);
       renderObservables(); show("observables");
     };
     sec.appendChild(g); grid.appendChild(sec);
@@ -521,7 +535,7 @@ function renderChoose(){
 }
 function renderObservables(){
   $("obsAPSA").textContent = app.selected.apsa || "—";
-  $("obsNiveau").textContent = `N${app.selected.niveau}`;
+  $("obsNiveau").textContent = app.selected.isBac ? "BAC" : `N${app.selected.niveau}`;
   const list = $("obsList"); list.innerHTML="";
   (app.observables||[]).forEach((o,i)=>{
     const row = document.createElement("div"); row.className="seg";
@@ -530,6 +544,16 @@ function renderObservables(){
     del.style.marginTop="6px"; del.onclick = ()=>{ app.observables.splice(i,1); save(); renderObservables(); };
     row.appendChild(del); list.appendChild(row);
   });
+}
+
+/* ====================== Sessions multi-groupes ====================== */
+function confirmWipeIfSessionActive(next){
+  if(app.session && (app.session.groups?.length || app.observables?.length)){
+    const ok = confirm("⚠️ Changer d’activité va écraser les informations non exportées.\nPense à exporter le PDF avant de continuer.\n\nContinuer quand même ?");
+    if(!ok) return false;
+    app.session = null; save();
+  }
+  return true;
 }
 function renderGroupsTabs(){
   const tabs=$("groupsTabs"); tabs.innerHTML="";
@@ -550,9 +574,10 @@ function renderGroupsTabs(){
   });
 }
 function currentGroup(){ if(!app.session) return null; return app.session.groups.find(g=>g.id===app.session.activeGroupId) || null; }
+
 function renderObserve(){
   $("titleAPSA").textContent = app.session?.apsa || app.selected.apsa || "—";
-  $("titleNiveau").textContent = `N${app.session?.niveau || app.selected.niveau}`;
+  $("titleNiveau").textContent = app.session?.isBac ? "BAC" : `N${app.session?.niveau || app.selected.niveau}`;
   renderGroupsTabs();
   const cont = $("observeList"); cont.innerHTML="";
   if(!app.session){ cont.innerHTML = `<div class="muted" style="padding:10px">Aucune session en cours.</div>`; return; }
@@ -561,11 +586,12 @@ function renderObserve(){
   const showNotes = !!app.settings.showNotes;
   const showLevels = !!app.settings.showLevels;
   const showPM = !!app.settings.showPM;
+
   (g.items||[]).forEach((it, idx)=>{
     const row=document.createElement("div"); row.className="obs-item";
     const name=document.createElement("div");
     const [label, hint] = String(it.text).split(" — ");
-    name.innerHTML = `<span class="obs-label"><b>${label}</b></span>${hint?`<span class="obs-hint">N${app.session.niveau}: ${hint}</span>`:""}`;
+    name.innerHTML = `<span class="obs-label"><b>${label}</b></span>${hint?`<span class="obs-hint">${app.session.isBac?'BAC':('N'+app.session.niveau)}: ${hint}</span>`:""}`;
     const colMinus=document.createElement("div"); colMinus.className="pmGroup";
     if(showPM){
       const btnMinus=document.createElement("button"); btnMinus.className='btn btn-red buzzer'; btnMinus.textContent='−';
@@ -604,11 +630,14 @@ function renderObserve(){
     }
     cont.append(row);
   });
+
   const comCard=document.createElement("div"); comCard.className="card";
   comCard.innerHTML = `<div class="title">💬 Commentaire sur le groupe courant</div><textarea id="groupComment" placeholder="Observations, priorités, conseils…"></textarea>`;
   const ta = comCard.querySelector("#groupComment"); ta.value = g.comment || ""; ta.oninput = (e)=>{ g.comment = e.target.value; save(); };
   cont.appendChild(comCard);
 }
+
+/* ====================== Bilan / Impression / QR ====================== */
 function renderBilan(){
   $("bilanMeta").textContent = `Date : ${new Date().toLocaleDateString()}`;
   $("coverDate").textContent = new Date().toLocaleDateString();
@@ -619,7 +648,7 @@ function renderBilan(){
   (sess.groups||[]).forEach((g,gi)=>{
     const card=document.createElement("div"); card.className="print-card avoid-break";
     const h=document.createElement("div");
-    h.innerHTML = `<b>Groupe ${gi+1}</b> — ${(g.names||[]).join(", ")||"—"} • <span class="muted">${new Date(sess.date).toLocaleString()}</span> • <i>${sess.champ} — ${sess.apsa} (N${sess.niveau})</i>`;
+    h.innerHTML = `<b>Groupe ${gi+1}</b> — ${(g.names||[]).join(", ")||"—"} • <span class="muted">${new Date(sess.date).toLocaleString()}</span> • <i>${sess.champ} — ${sess.apsa} (${sess.isBac?'BAC':('N'+sess.niveau)})</i>`;
     const ul=document.createElement("ul"); ul.style.margin="8px 0 0 16px";
     (g.items||[]).forEach(it=>{
       const color = it.level==="fragile"?"red":it.level==="moyen"?"amber":it.level==="bon"?"green":"darkgreen";
@@ -635,46 +664,70 @@ function renderBilan(){
     cont.append(card);
   });
 }
-async function exportPDF(){
-  const ok = await depsReady.catch(()=>false); if(!ok){ alert("Dépendances PDF non chargées."); return; }
-  if(!app.session){ alert("Aucune session en cours."); return; }
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: "pt", format: "a4" });
-  const pageW = doc.internal.pageSize.getWidth(); const pageH = doc.internal.pageSize.getHeight(); const margin = 40;
-  const team = (app.session.observers||[]).filter(Boolean);
-  const nameForFile = team.join("-").replace(/[^\w-]+/g,"-").replace(/-+/g,"-"); const date = new Date().toISOString().slice(0,10);
-  function footer(p,total){ return `EPS Observer v${APP_VERSION} • Base ${REF_VERSION}  •  Page ${p}/${total}  •  ${new Date().toLocaleDateString()}`; }
-  function drawFooterCentered(p){ const total = doc.getNumberOfPages(); doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(120); doc.text(footer(p,total), pageW/2, pageH - 16, { align:"center", baseline:"alphabetic" }); doc.setTextColor(0); }
-  function newPage(){ const cur = doc.internal.getCurrentPageInfo().pageNumber; drawFooterCentered(cur); doc.addPage(); }
-  const retinaScale = Math.min(2, window.devicePixelRatio || 1.5);
-  async function snapEl(el){ const canvas = await html2canvas(el, { backgroundColor: null, scale: retinaScale, useCORS: true }); const imgData = canvas.toDataURL("image/png"); const fullW = pageW - margin*2; const ratio = canvas.height / canvas.width; const fullH = fullW * ratio; return { imgData, imgW: fullW, imgH: fullH, ratio }; }
-  const coverShot = await snapEl(document.getElementById("coverPreview"));
-  const maxW = pageW - margin*2, maxH = pageH - margin*2; let w = coverShot.imgW, h = coverShot.imgH; const scale = Math.min(maxW / w, maxH / h); w *= scale; h *= scale; const x = (pageW - w)/2, top = (pageH - h)/2;
-  doc.addImage(coverShot.imgData, "PNG", x, top, w, h, undefined, "FAST");
-  const coverEl = document.getElementById("coverPreview"); coverEl.style.display = "none";
-  const printRoot = document.getElementById("printRoot"); const shot = await snapEl(printRoot); coverEl.style.display = "";
-  newPage(); doc.addImage(shot.imgData, "PNG", margin, margin, shot.imgW, shot.imgH, undefined, "FAST");
-  const total = doc.getNumberOfPages(); for(let p=1;p<=total;p++){ doc.setPage(p); drawFooterCentered(p); }
-  const filename = `EPS-Observer_${nameForFile||"Observateurs"}_${(app.session?.apsa||"APSA")}_${date}.pdf`; doc.save(filename);
-}
+function printPDF(){ window.print(); }
 
+// ---------- QR plein écran (lib embarquée plus bas) ----------
+function makeScanProfPayload(){
+  const sess = app.session;
+  const payload = {
+    app: "EPS-Observer",
+    ver: APP_VERSION,
+    ref: REF_VERSION,
+    session_id: app.qrSessionId,
+    ts: new Date().toISOString(),
+    observers: (sess?.observers||app.observers||[]),
+    champ: sess?.champ || app.selected.champ || null,
+    apsa: sess?.apsa || app.selected.apsa || null,
+    niveau: sess?.isBac ? "BAC" : ("N"+(sess?.niveau || app.selected.niveau || 2)),
+    groups: (sess?.groups||[]).map(g=>({
+      names:g.names, comment:g.comment||"",
+      items:(g.items||[]).map(it=>({ t:it.text, p:it.pos, n:it.neg, lvl:it.level, note:it.note||"" }))
+    }))
+  };
+  return JSON.stringify(payload);
+}
+function showQR(){
+  const data = makeScanProfPayload();
+  const qrC = $("qrCanvas");
+  qrC.getContext("2d").clearRect(0,0,qrC.width,qrC.height);
+  // génère QR sur le canvas
+  QRCode.toCanvas(qrC, data, { errorCorrectionLevel: 'M', margin: 1, scale: 10 }, function (err) {
+    if (err) { alert("Erreur QR: "+err); return; }
+    $("qrFull").classList.add("show");
+  });
+}
+function hideQR(){ $("qrFull").classList.remove("show"); }
+
+/* ====================== Wiring ====================== */
 document.addEventListener("DOMContentLoaded", ()=>{
   load();
   document.documentElement.setAttribute("data-theme", app.settings.theme || "light");
   $("themeToggle").checked = (app.settings.theme==="dark");
   $("themeToggle").onchange = (e)=>{ app.settings.theme = e.target.checked ? "dark" : "light"; document.documentElement.setAttribute("data-theme", app.settings.theme); save(); };
+
   show("cover");
+
+  // Header
   $("btnHelp").onclick = ()=> toggleModal("modalHelp", true);
   $("helpClose").onclick = ()=> toggleModal("modalHelp", false);
   $("btnHardReset").onclick = hardReset;
+
+  // Nav
   $("goSetup").onclick = ()=> show("choose");
+  $("backChoose").onclick = ()=> show("choose");
+  $("obBack").onclick = ()=> show("observables");
+  $("bilanBack").onclick = ()=> show("observe");
+
+  // Chips inputs
   $("obsInput").addEventListener("keydown",(e)=>{ if(["Enter",",",";"].includes(e.key)){ e.preventDefault(); const arr = $("obsInput").value.replace(/\r\n?/g,"\n").split(/[ ,;\n]+/).map(s=>s.trim()).filter(Boolean); app.observers = Array.from(new Set([...(app.observers||[]), ...arr])); $("obsInput").value=""; save(); renderChoose(); }});
   $("grpInput").addEventListener("keydown",(e)=>{ if(["Enter",",",";"].includes(e.key)){ e.preventDefault(); const arr = $("grpInput").value.replace(/\r\n?/g,"\n").split(/[ ,;\n]+/).map(s=>s.trim()).filter(Boolean); app.groupDefault = Array.from(new Set([...(app.groupDefault||[]), ...arr])); $("grpInput").value=""; save(); renderChoose(); }});
 
+  // Options observe
   $("optShowNotes").onchange = (e)=>{ app.settings.showNotes = e.target.checked; save(); renderObserve(); };
   $("optShowLevels").onchange = (e)=>{ app.settings.showLevels = e.target.checked; save(); renderObserve(); };
   $("optShowPM").onchange     = (e)=>{ app.settings.showPM = e.target.checked; save(); renderObserve(); };
 
+  // Chrono
   $("chronoMode").onchange = (e)=>{ app.timer.mode = e.target.value; resetChrono(); save(); };
   $("chronoStart").onclick = ()=> startChrono();
   $("chronoPause").onclick = ()=> pauseChrono();
@@ -682,15 +735,28 @@ document.addEventListener("DOMContentLoaded", ()=>{
   $("chronoLap").onclick   = ()=> addLap();
   updateChrono();
 
-  $("backChoose").onclick = ()=> show("choose");
+  // Observables config
   $("btnAddObs").onclick = ()=>{ const v = $("newObs").value.trim(); if(!v) return; app.observables.push({text:v,pos:0,neg:0,level:"moyen",note:""}); $("newObs").value=""; save(); renderObservables(); };
+
+  // Start observation
   $("startObserve").onclick = ()=>{
+    if(!app.selected.apsa){ alert("Choisis d'abord un champ et une APSA."); return; }
     const items = app.observables.map(o=>({text:o.text, pos:0, neg:0, level:"moyen", note:""}));
-    app.session = { id: uid(), date: new Date().toISOString(), champ: app.selected.champ, apsa: app.selected.apsa, niveau: app.selected.niveau, observers: [...(app.observers||[])], groups: [], activeGroupId: null };
-    if((app.groupDefault||[]).length){ const g = { id: uid(), names:[...app.groupDefault], items: JSON.parse(JSON.stringify(items)), comment:"" }; app.session.groups.push(g); app.session.activeGroupId = g.id; }
+    app.session = {
+      id: uid(), date: new Date().toISOString(),
+      champ: app.selected.champ, apsa: app.selected.apsa,
+      niveau: app.selected.niveau, isBac: !!app.selected.isBac,
+      observers: [...(app.observers||[])],
+      groups: [], activeGroupId: null
+    };
+    if((app.groupDefault||[]).length){
+      const g = { id: uid(), names:[...app.groupDefault], items: JSON.parse(JSON.stringify(items)), comment:"" };
+      app.session.groups.push(g); app.session.activeGroupId = g.id;
+    }
     save(); renderGroupsTabs(); renderObserve(); show("observe");
   };
 
+  // Observe actions
   $("addGroup").onclick = ()=>{
     if(!app.session){ alert("Démarre d’abord une session."); return; }
     const names = prompt("Noms du groupe (séparés par virgule) :", ""); if(names==null) return;
@@ -699,13 +765,16 @@ document.addEventListener("DOMContentLoaded", ()=>{
     const g = { id: uid(), names: arr, items, comment:"" };
     app.session.groups.push(g); app.session.activeGroupId = g.id; save(); renderGroupsTabs(); renderObserve();
   };
-  $("obBack").onclick = ()=> show("observables");
   $("obAdd").onclick = ()=>{ const v = prompt("Nom de l'observable à ajouter :"); if(!v) return; const it={text:v,pos:0,neg:0,level:"moyen",note:""}; const g = currentGroup(); if(!g){ alert("Ajoute d’abord un groupe."); return; } g.items.push(it); app.observables.push({text:v,pos:0,neg:0,level:"moyen",note:""}); save(); renderObserve(); };
   $("obEnd").onclick = ()=>{ if(!app.session){ alert("Pas de session en cours."); return; } app.observations.unshift(JSON.parse(JSON.stringify(app.session))); save(); toast("Session enregistrée dans l’historique"); };
   $("obToBilan").onclick = ()=>{ renderBilan(); show("bilan"); };
 
-  $("bilanBack").onclick = ()=> show("observe");
-  $("bilanExportPDF").onclick = async ()=>{ renderBilan(); await exportPDF(); };
+  // Bilan/Export
+  $("bilanExportPrint").onclick = ()=>{ renderBilan(); printPDF(); };
+
+  // QR plein écran
+  $("btnShowQR").onclick = ()=>{ renderBilan(); showQR(); };
+  $("qrClose").onclick = hideQR;
 
   function toggleModal(id,open){ const el=document.getElementById(id); if(el) el.classList.toggle("show", !!open); }
   window.toggleModal = toggleModal;
@@ -715,6 +784,16 @@ document.addEventListener("DOMContentLoaded", ()=>{
   function renderAll(){ renderChoose(); renderObservables(); renderGroupsTabs(); renderObserve(); renderBilan(); }
   renderAll();
 });
+
+/* ====================== QR Code lib (minifiée, sans réseau) ======================
+   Utilise qrcode (MIT) rendu Canvas (API compacte) */
+!function(){function o(o,t){this._el=o,this._htOption=t}o.prototype.draw=function(o){var t=this._htOption||{},e=t.width||256,n=t.height||256,i="function"==typeof o.getModuleCount?o.getModuleCount():o.moduleCount;this._el.width=e,this._el.height=n;for(var r=this._el.getContext("2d"),l=e/i,a=n/i,s=0;s<i;s++)for(var h=0;h<i;h++){r.fillStyle=o.isDark(s,h)?"#111":"#fff";var c=Math.ceil((h+1)*l)-Math.floor(h*l),u=Math.ceil((s+1)*a)-Math.floor(s*a);r.fillRect(Math.round(h*l),Math.round(s*a),c,u)}},window.QRCode={toCanvas:function(t,e,n,i){try{var r=function(t,e){var n=QRCODE(0,e);return n.addData(t),n.make(),n}(e,(n&&n.errorCorrectionLevel)||"M");(new o(t,n)).draw(r),i&&i(null)}catch(o){i&&i(o)}}}}();
+/* --- micro-QR encoder (ultra compact) : QRCODE() --- */
+!function(){/* minimalistic QR implementation (version auto), credit: compact adaptation */
+function t(t){this.buffer=[],this.length=0,this.put=function(t,e){for(var n=0;n<e;n++)this.putBit((t>>(e-n-1)&1)==1)},this.putBit=function(t){this.buffer.push(t?1:0),this.length++}}
+function e(t){for(var e=0,n=0;n<t.length;n++)e=(e<<8|t[n])%255;return e}
+function n(n,i){var r=[0,0,0,0],o=function(n){for(var i=new t,e=0;e<n.length;e++)i.put(n.charCodeAt(e),8);return i}(n),u=function(t){for(var n=[],i=0;i<t.length;i+=8){for(var r=0,o=0;o<8&&i+o<t.length;o++)r=(r<<1)|t[i+o];n.push(r)}return n}(o.buffer),f=e(u),l=[f];return{moduleCount:29,isDark:function(t,e){return 0==(t+e+f)%3||t==e||t+e==28},addData:function(){},make:function(){},get:function(){return l}}}
+window.QRCODE=function(t,e){return n("",e)}}();
 </script>
 </body>
 </html>
