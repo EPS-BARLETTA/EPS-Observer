@@ -137,26 +137,32 @@
       outline:2px solid #e5e7eb !important;
       outline-offset:2px;
     }
-  </style>
 
-  <script>
-    function loadScript(src){
-      return new Promise((resolve, reject)=>{
-        const s=document.createElement('script'); s.src=src; s.defer=true;
-        s.onload=resolve; s.onerror=()=>reject(new Error("load fail: "+src));
-        document.head.appendChild(s);
-      });
+    /* ✅ Impression : ne garder que le bilan */
+    @media print{
+      body{
+        background:#fff;
+      }
+      .header,
+      .footer,
+      #page-cover,
+      #page-choose,
+      #page-observables,
+      #page-observe,
+      #btnHardReset,
+      #btnHelp,
+      .nav{
+        display:none !important;
+      }
+      #page-bilan{
+        display:block !important;
+      }
+      #printRoot{
+        box-shadow:none;
+        border:none;
+      }
     }
-    const depsReady = (async ()=>{
-      if(!("html2canvas" in window)){
-        await loadScript("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
-      }
-      if(!(window.jspdf && window.jspdf.jsPDF)){
-        await loadScript("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
-      }
-      return true;
-    })();
-  </script>
+  </style>
 </head>
 <body>
 <div class="app">
@@ -238,6 +244,13 @@
             <label class="opt"><input type="checkbox" id="optShowNotes" checked/> Champ libre</label>
             <label class="opt"><input type="checkbox" id="optShowLevels" checked/> Niveaux</label>
             <label class="opt"><input type="checkbox" id="optShowPM" checked/> Boutons +/-</label>
+            <label class="opt">
+              <span>Mode :</span>
+              <select id="modeEval">
+                <option value="groupe">Groupe</option>
+                <option value="individuel">Individuel</option>
+              </select>
+            </label>
           </div>
           <div class="seg" id="groupsBar">
             <div class="bar">
@@ -328,7 +341,7 @@
       </div>
       <div class="help-bloc help-5">
         <div class="title">5️⃣ Bilan & PDF</div>
-        <p>Le bilan rassemble <b>tous les groupes</b>. Ajoute un <b>commentaire par groupe</b>. Exporte en <b>PDF</b> : couverture avec le <b>nom de l’app en haut</b> et les <b>observateurs</b> en grand. Aucune donnée n’est envoyée.</p>
+        <p>Le bilan rassemble <b>tous les groupes</b>. Ajoute un <b>commentaire par groupe</b>. Exporte en <b>PDF</b> via l’impression : couverture avec le <b>nom de l’app en haut</b> et les <b>observateurs</b> en grand. Aucune donnée n’est envoyée.</p>
       </div>
     </div>
   </div>
@@ -337,7 +350,7 @@
 <div id="toast" class="toast">APSA sélectionnée</div>
 
 <script>
-const APP_VERSION = "3.2.2-dark-contrast";
+const APP_VERSION = "3.3.0-local-print";
 const REF_VERSION = "CCA-base-2025.02";
 
 const CHAMPS = [
@@ -384,16 +397,16 @@ const CA_LEVEL_HINTS = {
   CA5:{1:"Entrer dans l’effort",2:"Régularité & contrôle",3:"Planification/auto-régulation",4:"Optimisation santé/perf"}
 };
 
-const STORAGE_KEY = "eps_observer_v3_multigroups_night";
-function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(app)); }
-function load(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(raw) Object.assign(app, JSON.parse(raw)); }catch{} }
+const STORAGE_KEY = "eps_observer_v3_multigroups_night_local";
+function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(app)); }catch(e){} }
+function load(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(raw) Object.assign(app, JSON.parse(raw)); }catch(e){} }
 function hardReset(){
   if(!confirm("Tout réinitialiser ? Cela efface TOUTES les données locales de l'application (observateurs, groupes, observables, sessions, paramètres).")) return;
   try{
     if(app && app.timer && app.timer.handle){ clearInterval(app.timer.handle); app.timer.handle = null; }
   }catch(e){}
   try{
-    localStorage.clear(); // clear for this origin
+    localStorage.clear();
   }catch(e){}
   try{
     window.location.replace(window.location.href);
@@ -410,7 +423,7 @@ function freshApp(){
     observables: [],
     session: null,
     observations: [],
-    settings:{ showNotes:true, showLevels:true, showPM:true, theme:"light" },
+    settings:{ showNotes:true, showLevels:true, showPM:true, theme:"light", modeEval:"groupe" },
     timer:{mode:"chrono", running:false, start:0, elapsed:0, target:0, handle:null, laps:[]}
   };
 }
@@ -421,7 +434,7 @@ let toastTimer=null;
 function toast(msg){ const t=$("toast"); if(!t) return; t.textContent=msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"), 1600); }
 function confirmWipeIfSessionActive(next){
   if(app.session && (app.session.groups?.length || app.observables?.length)){
-    const ok = confirm("⚠️ Changer d’activité va écraser les informations non exportées.\nPense à exporter le PDF avant de continuer.\n\nContinuer quand même ?");
+    const ok = confirm("⚠️ Changer d’activité va écraser les informations non exportées.\nPense à exporter le PDF (impression → PDF) avant de continuer.\n\nContinuer quand même ?");
     if(!ok) return false;
     app.session = null; save();
   }
@@ -435,11 +448,26 @@ function timeInputToMs(){
   const h = parseInt(m[1]||"0",10), mn=parseInt(m[2]||"0",10), s=parseInt(m[3]||"0",10);
   return ((h*3600)+(mn*60)+s)*1000;
 }
-function formatHMS(ms){ ms = Math.max(0, ms|0); const h = Math.floor(ms/3600000); const m = Math.floor((ms%3600000)/60000); const s = Math.floor((ms%60000)/1000); return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
+function formatHMS(ms){
+  ms = Math.max(0, ms|0);
+  const h = Math.floor(ms/3600000);
+  const m = Math.floor((ms%3600000)/60000);
+  const s = Math.floor((ms%60000)/1000);
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
 function updateChrono(){
   const now=Date.now(); let cur=0;
-  if(app.timer.mode==="chrono"){ cur = app.timer.running ? app.timer.elapsed + (now - app.timer.start) : app.timer.elapsed; }
-  else { const spent = app.timer.running ? app.timer.elapsed + (now - app.timer.start) : app.timer.elapsed; cur = Math.max(0, app.timer.target - spent); if(app.timer.running && cur===0){ app.timer.running=false; if(app.timer.handle){ clearInterval(app.timer.handle); app.timer.handle=null; } toast("⏱️ Temps écoulé"); } }
+  if(app.timer.mode==="chrono"){
+    cur = app.timer.running ? app.timer.elapsed + (now - app.timer.start) : app.timer.elapsed;
+  } else {
+    const spent = app.timer.running ? app.timer.elapsed + (now - app.timer.start) : app.timer.elapsed;
+    cur = Math.max(0, app.timer.target - spent);
+    if(app.timer.running && cur===0){
+      app.timer.running=false;
+      if(app.timer.handle){ clearInterval(app.timer.handle); app.timer.handle=null; }
+      toast("⏱️ Temps écoulé");
+    }
+  }
   $("chronoTime").textContent = formatHMS(cur);
 }
 function startChrono(){
@@ -453,17 +481,63 @@ function startChrono(){
   app.timer.handle=setInterval(updateChrono,250);
   updateChrono();
 }
-function pauseChrono(){ if(!app.timer.running) return; app.timer.elapsed += Date.now() - app.timer.start; app.timer.running=false; if(app.timer.handle){ clearInterval(app.timer.handle); app.timer.handle=null; } updateChrono(); save(); }
-function resetChrono(){ app.timer.running=false; app.timer.start=0; app.timer.elapsed=0; app.timer.target=(app.timer.mode==="timer")?timeInputToMs():0; app.timer.laps=[]; $("laps").innerHTML=""; if(app.timer.handle){ clearInterval(app.timer.handle); app.timer.handle=null; } updateChrono(); save(); }
-function addLap(){ const text=$("chronoTime").textContent; const lapIdx=app.timer.laps.length+1; app.timer.laps.push(text); const span=document.createElement("span"); span.className="lap"; span.textContent=`Tour ${lapIdx}: ${text}`; $("laps").appendChild(span); save(); }
+function pauseChrono(){
+  if(!app.timer.running) return;
+  app.timer.elapsed += Date.now() - app.timer.start;
+  app.timer.running=false;
+  if(app.timer.handle){ clearInterval(app.timer.handle); app.timer.handle=null; }
+  updateChrono(); save();
+}
+function resetChrono(){
+  app.timer.running=false;
+  app.timer.start=0;
+  app.timer.elapsed=0;
+  app.timer.target=(app.timer.mode==="timer")?timeInputToMs():0;
+  app.timer.laps=[];
+  $("laps").innerHTML="";
+  if(app.timer.handle){ clearInterval(app.timer.handle); app.timer.handle=null; }
+  updateChrono(); save();
+}
+function addLap(){
+  const text=$("chronoTime").textContent;
+  const lapIdx=app.timer.laps.length+1;
+  app.timer.laps.push(text);
+  const span=document.createElement("span");
+  span.className="lap";
+  span.textContent=`Tour ${lapIdx}: ${text}`;
+  $("laps").appendChild(span);
+  save();
+}
 
-function getHintFor(apsa, level){ const ca = APSA_TO_CA[apsa] || "CA4"; const arr = (CA_LEVEL_HINTS[ca]||{1:"Découverte",2:"Stabilisation",3:"Efficacité",4:"Exploitation"}); return arr[level] || arr[2]; }
-function buildObservablesFor(apsa, niveau){ const base = DEFAULT_OBS[apsa] || ["Observable 1","Observable 2"]; const hint = getHintFor(apsa, niveau); return base.map(k=>({text:`${k} — ${hint}`, pos:0,neg:0,level:"moyen",note:""})); }
+function getHintFor(apsa, level){
+  const ca = APSA_TO_CA[apsa] || "CA4";
+  const arr = (CA_LEVEL_HINTS[ca]||{1:"Découverte",2:"Stabilisation",3:"Efficacité",4:"Exploitation"});
+  return arr[level] || arr[2];
+}
+function buildObservablesFor(apsa, niveau){
+  const base = DEFAULT_OBS[apsa] || ["Observable 1","Observable 2"];
+  const hint = getHintFor(apsa, niveau);
+  return base.map(k=>({text:`${k} — ${hint}`, pos:0,neg:0,level:"moyen",note:""}));
+}
 
 function toChips(container, arr, onRemove){
-  container.innerHTML = ""; (arr||[]).forEach((name, i)=>{ const s = document.createElement("span"); s.className = "chip"; s.innerHTML = `<span>${name}</span>`; const b = document.createElement("button"); b.textContent = "×"; b.onclick = ()=> onRemove(i); s.appendChild(b); container.appendChild(s); });
+  container.innerHTML = "";
+  (arr||[]).forEach((name, i)=>{
+    const s = document.createElement("span");
+    s.className = "chip";
+    s.innerHTML = `<span>${name}</span>`;
+    const b = document.createElement("button");
+    b.textContent = "×";
+    b.onclick = ()=> onRemove(i);
+    s.appendChild(b);
+    container.appendChild(s);
+  });
 }
-function show(which){ ["page-cover","page-choose","page-observables","page-observe","page-bilan"].forEach(id=>$(id).classList.add("hidden")); const map={cover:"page-cover", choose:"page-choose", observables:"page-observables", observe:"page-observe", bilan:"page-bilan"}; $(map[which]).classList.remove("hidden"); }
+function show(which){
+  ["page-cover","page-choose","page-observables","page-observe","page-bilan"].forEach(id=>$(id).classList.add("hidden"));
+  const map={cover:"page-cover", choose:"page-choose", observables:"page-observables", observe:"page-observe", bilan:"page-bilan"};
+  $(map[which]).classList.remove("hidden");
+}
 
 function renderChamps(){
   const grid = $("champsGrid"); grid.innerHTML = "";
@@ -473,7 +547,11 @@ function renderChamps(){
     <div class="row">${[1,2,3,4].map(n=>`<button class="btn ${app.selected.niveau===n?'btn-green':'btn-gray'}" data-lvl="${n}">${n}</button>`).join("")}</div>`;
   lvlWrap.querySelectorAll("[data-lvl]").forEach(b=>b.onclick=()=>{
     app.selected.niveau=Number(b.getAttribute("data-lvl")); save();
-    if(app.selected.apsa){ app.observables = buildObservablesFor(app.selected.apsa, app.selected.niveau); renderObservables(); if(app.session) renderObserve(); }
+    if(app.selected.apsa){
+      app.observables = buildObservablesFor(app.selected.apsa, app.selected.niveau);
+      renderObservables();
+      if(app.session) renderObserve();
+    }
     renderChamps();
   });
   grid.appendChild(lvlWrap);
@@ -544,23 +622,43 @@ function renderGroupsTabs(){
     b.onclick = ()=>{ app.session.activeGroupId = g.id; save(); renderObserve(); };
     wrap.appendChild(b);
     const rm=document.createElement("button"); rm.className="btn btn-outline"; rm.textContent="✖︎"; rm.title="Supprimer ce groupe";
-    rm.onclick = ()=>{ if(!confirm("Supprimer ce groupe ?")) return; const i = app.session.groups.findIndex(x=>x.id===g.id); if(i>=0){ app.session.groups.splice(i,1); } if(app.session.activeGroupId===g.id){ app.session.activeGroupId = app.session.groups[0]?.id || null; } save(); renderGroupsTabs(); renderObserve(); };
+    rm.onclick = ()=>{
+      if(!confirm("Supprimer ce groupe ?")) return;
+      const i = app.session.groups.findIndex(x=>x.id===g.id);
+      if(i>=0){ app.session.groups.splice(i,1); }
+      if(app.session.activeGroupId===g.id){
+        app.session.activeGroupId = app.session.groups[0]?.id || null;
+      }
+      save(); renderGroupsTabs(); renderObserve();
+    };
     wrap.appendChild(rm);
     tabs.appendChild(wrap);
   });
 }
-function currentGroup(){ if(!app.session) return null; return app.session.groups.find(g=>g.id===app.session.activeGroupId) || null; }
+function currentGroup(){
+  if(!app.session) return null;
+  return app.session.groups.find(g=>g.id===app.session.activeGroupId) || null;
+}
 function renderObserve(){
   $("titleAPSA").textContent = app.session?.apsa || app.selected.apsa || "—";
   $("titleNiveau").textContent = `N${app.session?.niveau || app.selected.niveau}`;
   renderGroupsTabs();
+
+  const modeNow = (app.session && app.session.mode) || app.settings.modeEval || "groupe";
+  if($("modeEval")) $("modeEval").value = modeNow;
+
   const cont = $("observeList"); cont.innerHTML="";
-  if(!app.session){ cont.innerHTML = `<div class="muted" style="padding:10px">Aucune session en cours.</div>`; return; }
+  if(!app.session){
+    cont.innerHTML = `<div class="muted" style="padding:10px">Aucune session en cours.</div>`; return;
+  }
   const g = currentGroup();
-  if(!g){ cont.innerHTML = `<div class="muted" style="padding:10px">Ajoute un groupe à observer.</div>`; return; }
+  if(!g){
+    cont.innerHTML = `<div class="muted" style="padding:10px">Ajoute un groupe à observer.</div>`; return;
+  }
   const showNotes = !!app.settings.showNotes;
   const showLevels = !!app.settings.showLevels;
   const showPM = !!app.settings.showPM;
+
   (g.items||[]).forEach((it, idx)=>{
     const row=document.createElement("div"); row.className="obs-item";
     const name=document.createElement("div");
@@ -585,6 +683,7 @@ function renderObserve(){
       colPlus.append(corrPlus, tallyPlus, btnPlus);
     }
     row.append(name, colMinus, colPlus);
+
     if(showLevels || showNotes){
       const extra=document.createElement("div"); extra.className="obs-extra";
       const levels = document.createElement("div"); levels.className="fmb";
@@ -597,16 +696,20 @@ function renderObserve(){
       }
       const noteWrap=document.createElement("div");
       if(showNotes){
-        const input=document.createElement("input"); input.className="note"; input.placeholder="Note/temps (ex: 12''3, 1'05'', consigne…)"; input.value = it.note||""; input.oninput = (e)=>{ it.note = e.target.value; save(); };
+        const input=document.createElement("input"); input.className="note"; input.placeholder="Note/temps (ex: 12''3, 1'05'', consigne…)"; input.value = it.note||"";
+        input.oninput = (e)=>{ it.note = e.target.value; save(); };
         noteWrap.appendChild(input);
       }
       extra.append(levels, noteWrap); row.appendChild(extra);
     }
     cont.append(row);
   });
+
   const comCard=document.createElement("div"); comCard.className="card";
   comCard.innerHTML = `<div class="title">💬 Commentaire sur le groupe courant</div><textarea id="groupComment" placeholder="Observations, priorités, conseils…"></textarea>`;
-  const ta = comCard.querySelector("#groupComment"); ta.value = g.comment || ""; ta.oninput = (e)=>{ g.comment = e.target.value; save(); };
+  const ta = comCard.querySelector("#groupComment");
+  ta.value = g.comment || "";
+  ta.oninput = (e)=>{ g.comment = e.target.value; save(); };
   cont.appendChild(comCard);
 }
 function renderBilan(){
@@ -631,45 +734,62 @@ function renderBilan(){
       ul.appendChild(li);
     });
     card.append(h, ul);
-    if ((g.comment||"").trim().length){ const cdiv=document.createElement("div"); cdiv.style.marginTop="8px"; cdiv.innerHTML = `<b>💬 Commentaire :</b> ${g.comment}`; card.appendChild(cdiv); }
+    if ((g.comment||"").trim().length){
+      const cdiv=document.createElement("div");
+      cdiv.style.marginTop="8px";
+      cdiv.innerHTML = `<b>💬 Commentaire :</b> ${g.comment}`;
+      card.appendChild(cdiv);
+    }
     cont.append(card);
   });
 }
-async function exportPDF(){
-  const ok = await depsReady.catch(()=>false); if(!ok){ alert("Dépendances PDF non chargées."); return; }
-  if(!app.session){ alert("Aucune session en cours."); return; }
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: "pt", format: "a4" });
-  const pageW = doc.internal.pageSize.getWidth(); const pageH = doc.internal.pageSize.getHeight(); const margin = 40;
-  const team = (app.session.observers||[]).filter(Boolean);
-  const nameForFile = team.join("-").replace(/[^\w-]+/g,"-").replace(/-+/g,"-"); const date = new Date().toISOString().slice(0,10);
-  function footer(p,total){ return `EPS Observer v${APP_VERSION} • Base ${REF_VERSION}  •  Page ${p}/${total}  •  ${new Date().toLocaleDateString()}`; }
-  function drawFooterCentered(p){ const total = doc.getNumberOfPages(); doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(120); doc.text(footer(p,total), pageW/2, pageH - 16, { align:"center", baseline:"alphabetic" }); doc.setTextColor(0); }
-  function newPage(){ const cur = doc.internal.getCurrentPageInfo().pageNumber; drawFooterCentered(cur); doc.addPage(); }
-  const retinaScale = Math.min(2, window.devicePixelRatio || 1.5);
-  async function snapEl(el){ const canvas = await html2canvas(el, { backgroundColor: null, scale: retinaScale, useCORS: true }); const imgData = canvas.toDataURL("image/png"); const fullW = pageW - margin*2; const ratio = canvas.height / canvas.width; const fullH = fullW * ratio; return { imgData, imgW: fullW, imgH: fullH, ratio }; }
-  const coverShot = await snapEl(document.getElementById("coverPreview"));
-  const maxW = pageW - margin*2, maxH = pageH - margin*2; let w = coverShot.imgW, h = coverShot.imgH; const scale = Math.min(maxW / w, maxH / h); w *= scale; h *= scale; const x = (pageW - w)/2, top = (pageH - h)/2;
-  doc.addImage(coverShot.imgData, "PNG", x, top, w, h, undefined, "FAST");
-  const coverEl = document.getElementById("coverPreview"); coverEl.style.display = "none";
-  const printRoot = document.getElementById("printRoot"); const shot = await snapEl(printRoot); coverEl.style.display = "";
-  newPage(); doc.addImage(shot.imgData, "PNG", margin, margin, shot.imgW, shot.imgH, undefined, "FAST");
-  const total = doc.getNumberOfPages(); for(let p=1;p<=total;p++){ doc.setPage(p); drawFooterCentered(p); }
-  const filename = `EPS-Observer_${nameForFile||"Observateurs"}_${(app.session?.apsa||"APSA")}_${date}.pdf`; doc.save(filename);
+
+/* ✅ Export PDF 100% local : impression du bilan */
+function exportPDF(){
+  if(!app.session){
+    alert("Aucune session en cours.");
+    return;
+  }
+  renderBilan();
+  show("bilan");
+  setTimeout(()=>{ window.print(); }, 100);
 }
 
 document.addEventListener("DOMContentLoaded", ()=>{
   load();
   document.documentElement.setAttribute("data-theme", app.settings.theme || "light");
   $("themeToggle").checked = (app.settings.theme==="dark");
-  $("themeToggle").onchange = (e)=>{ app.settings.theme = e.target.checked ? "dark" : "light"; document.documentElement.setAttribute("data-theme", app.settings.theme); save(); };
+  $("themeToggle").onchange = (e)=>{
+    app.settings.theme = e.target.checked ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", app.settings.theme);
+    save();
+  };
+
   show("cover");
+
   $("btnHelp").onclick = ()=> toggleModal("modalHelp", true);
   $("helpClose").onclick = ()=> toggleModal("modalHelp", false);
   $("btnHardReset").onclick = hardReset;
   $("goSetup").onclick = ()=> show("choose");
-  $("obsInput").addEventListener("keydown",(e)=>{ if(["Enter",",",";"].includes(e.key)){ e.preventDefault(); const arr = $("obsInput").value.replace(/\r\n?/g,"\n").split(/[ ,;\n]+/).map(s=>s.trim()).filter(Boolean); app.observers = Array.from(new Set([...(app.observers||[]), ...arr])); $("obsInput").value=""; save(); renderChoose(); }});
-  $("grpInput").addEventListener("keydown",(e)=>{ if(["Enter",",",";"].includes(e.key)){ e.preventDefault(); const arr = $("grpInput").value.replace(/\r\n?/g,"\n").split(/[ ,;\n]+/).map(s=>s.trim()).filter(Boolean); app.groupDefault = Array.from(new Set([...(app.groupDefault||[]), ...arr])); $("grpInput").value=""; save(); renderChoose(); }});
+
+  $("obsInput").addEventListener("keydown",(e)=>{
+    if(["Enter",",",";"].includes(e.key)){
+      e.preventDefault();
+      const arr = $("obsInput").value.replace(/\r\n?/g,"\n").split(/[ ,;\n]+/).map(s=>s.trim()).filter(Boolean);
+      app.observers = Array.from(new Set([...(app.observers||[]), ...arr]));
+      $("obsInput").value="";
+      save(); renderChoose();
+    }
+  });
+  $("grpInput").addEventListener("keydown",(e)=>{
+    if(["Enter",",",";"].includes(e.key)){
+      e.preventDefault();
+      const arr = $("grpInput").value.replace(/\r\n?/g,"\n").split(/[ ,;\n]+/).map(s=>s.trim()).filter(Boolean);
+      app.groupDefault = Array.from(new Set([...(app.groupDefault||[]), ...arr]));
+      $("grpInput").value="";
+      save(); renderChoose();
+    }
+  });
 
   $("optShowNotes").onchange = (e)=>{ app.settings.showNotes = e.target.checked; save(); renderObserve(); };
   $("optShowLevels").onchange = (e)=>{ app.settings.showLevels = e.target.checked; save(); renderObserve(); };
@@ -682,33 +802,143 @@ document.addEventListener("DOMContentLoaded", ()=>{
   $("chronoLap").onclick   = ()=> addLap();
   updateChrono();
 
+  if($("modeEval")){
+    $("modeEval").value = app.settings.modeEval || "groupe";
+    $("modeEval").onchange = (e)=>{
+      app.settings.modeEval = e.target.value || "groupe";
+      if(app.session){
+        app.session.mode = app.settings.modeEval;
+      }
+      save(); renderObserve();
+    };
+  }
+
   $("backChoose").onclick = ()=> show("choose");
-  $("btnAddObs").onclick = ()=>{ const v = $("newObs").value.trim(); if(!v) return; app.observables.push({text:v,pos:0,neg:0,level:"moyen",note:""}); $("newObs").value=""; save(); renderObservables(); };
+  $("btnAddObs").onclick = ()=>{
+    const v = $("newObs").value.trim(); if(!v) return;
+    app.observables.push({text:v,pos:0,neg:0,level:"moyen",note:""});
+    $("newObs").value="";
+    save(); renderObservables();
+  };
+
   $("startObserve").onclick = ()=>{
-    const items = app.observables.map(o=>({text:o.text, pos:0, neg:0, level:"moyen", note:""}));
-    app.session = { id: uid(), date: new Date().toISOString(), champ: app.selected.champ, apsa: app.selected.apsa, niveau: app.selected.niveau, observers: [...(app.observers||[])], groups: [], activeGroupId: null };
-    if((app.groupDefault||[]).length){ const g = { id: uid(), names:[...app.groupDefault], items: JSON.parse(JSON.stringify(items)), comment:"" }; app.session.groups.push(g); app.session.activeGroupId = g.id; }
+    if(!app.selected.apsa){
+      alert("Choisis d'abord une APSA.");
+      return;
+    }
+    const baseItems = app.observables.map(o=>({text:o.text, pos:0, neg:0, level:"moyen", note:""}));
+    let indivName = null;
+    if(app.settings.modeEval === "individuel"){
+      const base = (app.groupDefault||[]).slice();
+      if(base.length === 1){
+        indivName = base[0];
+      } else {
+        const suggestion = base.join(", ");
+        indivName = prompt("Nom de l’élève observé (mode individuel) :", suggestion || "");
+        if(!indivName){
+          indivName = suggestion || "Élève";
+        }
+      }
+    }
+    app.session = {
+      id: uid(),
+      date: new Date().toISOString(),
+      champ: app.selected.champ,
+      apsa: app.selected.apsa,
+      niveau: app.selected.niveau,
+      observers: [...(app.observers||[])],
+      groups: [],
+      activeGroupId: null,
+      mode: app.settings.modeEval || "groupe",
+      indivBaseName: indivName
+    };
+
+    if((app.groupDefault||[]).length){
+      let names = [...app.groupDefault];
+      if(app.session.mode === "individuel"){
+        names = [app.session.indivBaseName || names.join(", ")];
+      }
+      const g = {
+        id: uid(),
+        names,
+        items: JSON.parse(JSON.stringify(baseItems)),
+        comment:""
+      };
+      app.session.groups.push(g);
+      app.session.activeGroupId = g.id;
+    }
+
     save(); renderGroupsTabs(); renderObserve(); show("observe");
   };
 
   $("addGroup").onclick = ()=>{
-    if(!app.session){ alert("Démarre d’abord une session."); return; }
-    const names = prompt("Noms du groupe (séparés par virgule) :", ""); if(names==null) return;
-    const arr = names.split(",").map(s=>s.trim()).filter(Boolean);
+    if(!app.session){
+      alert("Démarre d’abord une session.");
+      return;
+    }
     const items = app.observables.map(o=>({text:o.text, pos:0, neg:0, level:"moyen", note:""}));
+
+    if(app.session.mode === "individuel"){
+      let indivName = app.session.indivBaseName;
+      if(!indivName){
+        indivName = prompt("Nom de l’élève observé (mode individuel) :", "");
+        if(!indivName) return;
+        app.session.indivBaseName = indivName;
+      }
+      const g = { id: uid(), names:[indivName], items, comment:"" };
+      app.session.groups.push(g);
+      app.session.activeGroupId = g.id;
+      save(); renderGroupsTabs(); renderObserve();
+      return;
+    }
+
+    const names = prompt("Noms du groupe (séparés par virgule) :", "");
+    if(names==null) return;
+    const arr = names.split(",").map(s=>s.trim()).filter(Boolean);
+    if(!arr.length){
+      alert("Aucun nom saisi.");
+      return;
+    }
     const g = { id: uid(), names: arr, items, comment:"" };
-    app.session.groups.push(g); app.session.activeGroupId = g.id; save(); renderGroupsTabs(); renderObserve();
+    app.session.groups.push(g);
+    app.session.activeGroupId = g.id;
+    save(); renderGroupsTabs(); renderObserve();
   };
+
   $("obBack").onclick = ()=> show("observables");
-  $("obAdd").onclick = ()=>{ const v = prompt("Nom de l'observable à ajouter :"); if(!v) return; const it={text:v,pos:0,neg:0,level:"moyen",note:""}; const g = currentGroup(); if(!g){ alert("Ajoute d’abord un groupe."); return; } g.items.push(it); app.observables.push({text:v,pos:0,neg:0,level:"moyen",note:""}); save(); renderObserve(); };
-  $("obEnd").onclick = ()=>{ if(!app.session){ alert("Pas de session en cours."); return; } app.observations.unshift(JSON.parse(JSON.stringify(app.session))); save(); toast("Session enregistrée dans l’historique"); };
+  $("obAdd").onclick = ()=>{
+    const v = prompt("Nom de l'observable à ajouter :");
+    if(!v) return;
+    const it={text:v,pos:0,neg:0,level:"moyen",note:""};
+    const g = currentGroup();
+    if(!g){
+      alert("Ajoute d’abord un groupe.");
+      return;
+    }
+    g.items.push(it);
+    app.observables.push({text:v,pos:0,neg:0,level:"moyen",note:""});
+    save(); renderObserve();
+  };
+  $("obEnd").onclick = ()=>{
+    if(!app.session){
+      alert("Pas de session en cours.");
+      return;
+    }
+    app.observations.unshift(JSON.parse(JSON.stringify(app.session)));
+    save();
+    toast("Session enregistrée dans l’historique");
+  };
   $("obToBilan").onclick = ()=>{ renderBilan(); show("bilan"); };
 
   $("bilanBack").onclick = ()=> show("observe");
-  $("bilanExportPDF").onclick = async ()=>{ renderBilan(); await exportPDF(); };
+  $("bilanExportPDF").onclick = ()=>{ exportPDF(); };
 
-  function toggleModal(id,open){ const el=document.getElementById(id); if(el) el.classList.toggle("show", !!open); }
+  function toggleModal(id,open){
+    const el=document.getElementById(id);
+    if(el) el.classList.toggle("show", !!open);
+  }
   window.toggleModal = toggleModal;
+
   window.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') save(); });
   window.addEventListener('beforeunload', save);
 
