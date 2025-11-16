@@ -3,10 +3,18 @@
 // Bloc 1/4 : constantes, état, stockage, navigation
 // =============================
 
-// --- Constantes pédagogiques (CA, APSA, observables par défaut) ---
+// Charger l'état local
+loadState();
 
+// BOUTON DE DÉMARRAGE — PAGE 1 → PAGE 2
+document.getElementById("btnStart").onclick = () => {
+  showPage("page-activity");
+  initActivityPage();
+};
+
+// --- Constantes pédagogiques (CA, APSA, observables par défaut) ---
 const CHAMPS = [
-  {
+{
     id: "CA1",
     color: "var(--ca1)",
     label: "Réaliser une performance motrice maximale mesurable",
