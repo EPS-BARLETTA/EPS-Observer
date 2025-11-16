@@ -42,8 +42,10 @@
     <div class="bloc">
       <h3>APSA</h3>
       <div id="apsaList"></div>
-      <input id="addApsaInput" placeholder="Ajouter une APSA">
-      <button id="addApsaBtn" class="btn btn-blue">Ajouter</button>
+      <div class="row">
+        <input id="addApsaInput" placeholder="Ajouter une APSA">
+        <button id="addApsaBtn" class="btn btn-blue">Ajouter</button>
+      </div>
     </div>
 
     <button id="btnToObservables" class="btn btn-green">Configurer les observables</button>
@@ -53,6 +55,26 @@
   <section id="page-observables" class="page">
     <h2>Observables</h2>
     <p id="obsApsaLabel"></p>
+
+    <!-- Réglages globaux d’affichage -->
+    <div class="bloc bloc-compact">
+      <h3>Affichage par défaut des observables</h3>
+      <div class="row toggles-row">
+        <label class="toggle-chip">
+          <input type="checkbox" id="globalShowLevels_config" checked>
+          <span>Niveaux 1–4</span>
+        </label>
+        <label class="toggle-chip">
+          <input type="checkbox" id="globalShowPlusMinus_config" checked>
+          <span>Boutons + / −</span>
+        </label>
+        <label class="toggle-chip">
+          <input type="checkbox" id="globalShowComment_config" checked>
+          <span>Commentaire</span>
+        </label>
+      </div>
+      <p class="hint-small">Ces réglages sont appliqués à tous les observables. Vous pourrez les modifier ensuite, observable par observable.</p>
+    </div>
 
     <div id="observableList"></div>
 
@@ -93,6 +115,26 @@
   <section id="page-observation" class="page">
     <h2 id="sessionHeader"></h2>
 
+    <!-- Réglages globaux aussi accessibles ici -->
+    <div class="bloc bloc-compact">
+      <h3>Affichage global</h3>
+      <div class="row toggles-row">
+        <label class="toggle-chip">
+          <input type="checkbox" id="globalShowLevels_obs" checked>
+          <span>Niveaux 1–4</span>
+        </label>
+        <label class="toggle-chip">
+          <input type="checkbox" id="globalShowPlusMinus_obs" checked>
+          <span>Boutons + / −</span>
+        </label>
+        <label class="toggle-chip">
+          <input type="checkbox" id="globalShowComment_obs" checked>
+          <span>Commentaire</span>
+        </label>
+      </div>
+      <p class="hint-small">Vous pouvez toujours ajuster chaque observable individuellement.</p>
+    </div>
+
     <div class="bloc">
       <button id="btnAddTarget" class="btn btn-blue">+ Ajouter une personne</button>
     </div>
@@ -100,7 +142,7 @@
     <div id="targetTabs"></div>
     <div id="observationArea"></div>
 
-    <div class="row">
+    <div class="row row-footer">
       <button id="btnToBilan" class="btn btn-green">📄 Voir le bilan</button>
       <button id="btnEndSession" class="btn btn-red">Terminer</button>
     </div>
@@ -112,8 +154,10 @@
 
     <div id="bilanContent"></div>
 
-    <button id="btnExportPDF" class="btn btn-green-dark">📄 Exporter le PDF</button>
-    <button id="btnBackToSession" class="btn btn-blue">Retour à la session</button>
+    <div class="row row-footer">
+      <button id="btnExportPDF" class="btn btn-green-dark">📄 Exporter le PDF</button>
+      <button id="btnBackToSession" class="btn btn-blue">Retour à la session</button>
+    </div>
   </section>
 
 </div>
