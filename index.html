@@ -7,10 +7,6 @@
 
   <!-- Fichiers CSS -->
   <link rel="stylesheet" href="./style.css">
-
-  <!-- Librairie PDF locale -->
-  <script src="./lib/pdfmake.min.js"></script>
-  <script src="./lib/vfs_fonts.js"></script>
 </head>
 
 <body>
@@ -118,7 +114,10 @@
 
 </div>
 
-<!-- FICHIER JS PRINCIPAL -->
+<!-- 📌 CHARGEMENT DES SCRIPTS APRÈS LE HTML -->
+<script src="./lib/pdfmake.min.js"></script>
+<script src="./lib/vfs_fonts.js"></script>
 <script src="./app.js"></script>
+
 </body>
 </html>
