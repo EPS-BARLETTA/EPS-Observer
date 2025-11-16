@@ -1,6 +1,5 @@
 // =============================
 // EPS OBSERVER - APP.JS
-// Bloc 1/4 : constantes, état, stockage, navigation
 // =============================
 
 // --- Constantes pédagogiques (CA, APSA, observables par défaut) ---
@@ -66,7 +65,6 @@ const DEFAULT_OBS = {
   "Yoga":["Respiration","Alignement","Stabilité","Fluidité"]
 };
 
-// Petits "hints" par CA / niveau pour étoffer l'observable
 const CA_LEVEL_HINTS = {
   CA1:{1:"Découverte / allure de base",2:"Régularité & tenue",3:"Optimisation technique",4:"Stratégie & gestion d'effort"},
   CA2:{1:"Sécurité & repères",2:"Choix simples",3:"Lecture / anticipation",4:"Optimisation itinéraire / effort"},
@@ -75,38 +73,39 @@ const CA_LEVEL_HINTS = {
   CA5:{1:"Entrer dans l’effort",2:"Régularité & contrôle",3:"Planification / auto-régulation",4:"Optimisation santé / perf"}
 };
 
-// --- État global de l'application ---
+// --- État global ---
 
 const STORAGE_KEY = "eps_observer_v4_state";
 
 const appState = {
   // activité
-  selectedChampId: null,   // "CA1"...
-  selectedApsa: null,      // "Basket-ball"...
-  selectedLevel: 2,        // 1..4
+  selectedChampId: null,
+  selectedApsa: null,
+  selectedLevel: 2,
 
-  // APSA personnalisées par CA
-  customApsaByChamp: {},   // { CA1:["..."], ... }
+  customApsaByChamp: {},
 
-  // observables pour la session courante (modèle)
-  observablesTemplate: [], // [{id,text},...]
+  // observables configurés
+  observablesTemplate: [],
 
-  // rôle courant : "observer" ou "observed"
+  // affichage global
+  globalDisplay: {
+    showLevels: true,
+    showPlusMinus: true,
+    showComment: true
+  },
+
+  // rôle & session
   currentRole: null,
-
-  // session en cours
-  session: null            // objet défini plus bas
+  sessionTargetsTemp: [],
+  session: null
 };
 
-// --- Helpers simples ---
+// --- Helpers ---
 
-function $(id){
-  return document.getElementById(id);
-}
+function $(id){ return document.getElementById(id); }
 
-function uid(){
-  return Math.random().toString(36).slice(2);
-}
+function uid(){ return Math.random().toString(36).slice(2); }
 
 // --- Stockage local ---
 
@@ -124,7 +123,7 @@ function loadState(){
     const raw = localStorage.getItem(STORAGE_KEY);
     if(!raw) return;
     const parsed = JSON.parse(raw);
-    Object.assign(appState, parsed || {});
+    Object.assign(appState, {...appState, ...(parsed || {})});
   }catch(e){
     console.warn("Impossible de charger l'état, on repart propre.");
   }
@@ -139,7 +138,7 @@ function showPage(id){
   if(el) el.classList.add("visible");
 }
 
-// --- Récupérer données utiles ---
+// --- Récupérations utilitaires ---
 
 function getChampById(id){
   return CHAMPS.find(c => c.id === id) || null;
@@ -152,62 +151,90 @@ function getAllApsaForChamp(champId){
   return [...champ.baseAPSA, ...customs];
 }
 
+// Configuration d'affichage effective pour un item
+function getDisplayFlags(item){
+  if(item.useGlobal === undefined || item.useGlobal){
+    return {
+      showLevels: appState.globalDisplay.showLevels,
+      showPlusMinus: appState.globalDisplay.showPlusMinus,
+      showComment: appState.globalDisplay.showComment
+    };
+  }
+  return {
+    showLevels: item.showLevels ?? true,
+    showPlusMinus: item.showPlusMinus ?? false,
+    showComment: item.showComment ?? true
+  };
+}
+
+// mapping mode <-> flags pour le select
+function inferModeFromItem(item){
+  if(item.useGlobal === undefined || item.useGlobal) return "global";
+
+  const sL = !!item.showLevels;
+  const sP = !!item.showPlusMinus;
+  const sC = !!item.showComment;
+
+  if(sL && sP && sC) return "all";
+  if(sL && !sP && !sC) return "levels";
+  if(!sL && sP && !sC) return "plus";
+  if(!sL && !sP && sC) return "comment";
+  if(sL && sP && !sC) return "plus_level";
+  if(sL && !sP && sC) return "level_comment";
+  if(!sL && sP && sC) return "plus_comment";
+  return "all";
+}
+
+function applyModeToItem(item, mode){
+  if(mode === "global"){
+    item.useGlobal = true;
+    return;
+  }
+  item.useGlobal = false;
+  item.showLevels = false;
+  item.showPlusMinus = false;
+  item.showComment = false;
+
+  if(mode === "levels") item.showLevels = true;
+  if(mode === "plus") item.showPlusMinus = true;
+  if(mode === "comment") item.showComment = true;
+  if(mode === "plus_level"){ item.showLevels = true; item.showPlusMinus = true; }
+  if(mode === "level_comment"){ item.showLevels = true; item.showComment = true; }
+  if(mode === "plus_comment"){ item.showPlusMinus = true; item.showComment = true; }
+  if(mode === "all"){ item.showLevels = true; item.showPlusMinus = true; item.showComment = true; }
+}
+
 // Créer la liste d'observables à partir de l'APSA + niveau
 function buildObservablesTemplate(apsa, niveau){
   const base = DEFAULT_OBS[apsa] || ["Observable 1","Observable 2","Observable 3"];
-  // deviner le CA
-  const champ = CHAMPS.find(c => c.baseAPSA.includes(apsa)) || CHAMPS[3]; // CA4 par défaut
+  const champ = CHAMPS.find(c => c.baseAPSA.includes(apsa)) || CHAMPS[3];
   const hints = CA_LEVEL_HINTS[champ.id] || {};
   const hint = hints[niveau] || "";
+
   return base.map(txt => ({
     id: uid(),
-    text: hint ? `${txt} — ${hint}` : txt
+    text: hint ? `${txt} — ${hint}` : txt,
+    useGlobal: true,
+    showLevels: appState.globalDisplay.showLevels,
+    showPlusMinus: appState.globalDisplay.showPlusMinus,
+    showComment: appState.globalDisplay.showComment
   }));
 }
 
-// --- Session (structure) ---
-
-/*
- session = {
-   id: "...",
-   mode: "observer" | "observed",
-   dateIso: "...",
-   champId: "CA4",
-   apsa: "Basket-ball",
-   level: 2,
-   selfName: "Jérôme",
-   targets: [
-     {
-       id: "...",
-       name: "Paul",              // si mode observer => personne observée
-                                 // si mode observed => observateur
-       items: [
-         {
-           id: observableId,
-           text: "...",
-           plus: 0,
-           minus: 0,
-           level: 2,              // 1..4
-           note: ""
-         }, ...
-       ],
-       comment: ""
-     },
-     ...
-   ],
-   activeTargetId: "..."
- }
-*/
-
-// Créer un "pack" d'items observables vierges pour un nouveau target
+// Créer les items vierges pour un nouveau target
 function makeEmptyItemsFromTemplate(){
   return (appState.observablesTemplate || []).map(o => ({
     id: o.id,
     text: o.text,
-    plus: 0,
+    count: 0,         // compteur +/- (stocké ici)
+    plus: 0,          // conservé si besoin plus tard
     minus: 0,
     level: 2,
-    note: ""
+    note: "",
+    useGlobal: o.useGlobal !== undefined ? o.useGlobal : true,
+    showLevels: o.showLevels !== undefined ? o.showLevels : true,
+    showPlusMinus: o.showPlusMinus !== undefined ? o.showPlusMinus : true,
+    showComment: o.showComment !== undefined ? o.showComment : true
   }));
 }
 
@@ -216,20 +243,24 @@ function getActiveTarget(){
   return (appState.session.targets || []).find(t => t.id === appState.session.activeTargetId) || null;
 }
 
-// On exposera ces fonctions plus bas dans les écouteurs d'évènements
-// Les blocs suivants vont construire :
-// - la page activité (champs, APSA, niveaux)
-// - la page observables
-// - la page rôle + session
-// - la page observation
-// - la page bilan & PDF
 // =============================
-// Bloc 2/4 : Page Activité & Observables
+// INITIALISATION
 // =============================
 
-// ---------- PAGE 2 : ACTIVITÉ ----------
+loadState();
+
+// BOUTON DE DÉMARRAGE — PAGE 1 → PAGE 2
+$("btnStart").onclick = () => {
+  showPage("page-activity");
+  initActivityPage();
+};
+
+// =============================
+// Bloc 2 : Page Activité & Observables
+// =============================
 
 // --- Niveaux (4 ronds) ---
+
 function renderLevelButtons(){
   const container = $("levelButtons");
   container.innerHTML = "";
@@ -251,7 +282,8 @@ function renderLevelButtons(){
   }
 }
 
-// --- Champs (CA1 → CA5) ---
+// --- Champs ---
+
 function renderChampList(){
   const container = $("champList");
   container.innerHTML = "";
@@ -276,6 +308,7 @@ function renderChampList(){
 }
 
 // --- APSA ---
+
 function renderApsaList(){
   const container = $("apsaList");
   container.innerHTML = "";
@@ -303,6 +336,7 @@ function renderApsaList(){
 }
 
 // --- Ajouter une APSA ---
+
 $("addApsaBtn").onclick = ()=>{
   const txt = $("addApsaInput").value.trim();
   if(!txt || !appState.selectedChampId) return;
@@ -316,14 +350,59 @@ $("addApsaBtn").onclick = ()=>{
   renderApsaList();
 };
 
+// --- Réglages globaux (UI + synchro) ---
+
+function syncGlobalDisplayUI(){
+  const map = [
+    ["globalShowLevels_config","showLevels"],
+    ["globalShowPlusMinus_config","showPlusMinus"],
+    ["globalShowComment_config","showComment"],
+    ["globalShowLevels_obs","showLevels"],
+    ["globalShowPlusMinus_obs","showPlusMinus"],
+    ["globalShowComment_obs","showComment"]
+  ];
+  map.forEach(([id,key])=>{
+    const el = $(id);
+    if(el) el.checked = !!appState.globalDisplay[key];
+  });
+}
+
+function attachGlobalDisplayListeners(){
+  const configs = [
+    ["globalShowLevels_config","showLevels"],
+    ["globalShowPlusMinus_config","showPlusMinus"],
+    ["globalShowComment_config","showComment"],
+    ["globalShowLevels_obs","showLevels"],
+    ["globalShowPlusMinus_obs","showPlusMinus"],
+    ["globalShowComment_obs","showComment"]
+  ];
+
+  configs.forEach(([id,key])=>{
+    const el = $(id);
+    if(!el) return;
+    el.addEventListener("change", ()=>{
+      appState.globalDisplay[key] = el.checked;
+      saveState();
+      syncGlobalDisplayUI();
+      // Mettre à jour les vues
+      renderObservableList();
+      if(appState.session){
+        renderObservationPage();
+      }
+    });
+  });
+
+  syncGlobalDisplayUI();
+}
+
 // --- Aller aux observables ---
+
 $("btnToObservables").onclick = ()=>{
   if(!appState.selectedChampId || !appState.selectedApsa){
     alert("Sélectionnez un CA et une APSA.");
     return;
   }
 
-  // Construire la template d'observables (modifiable ensuite)
   appState.observablesTemplate = buildObservablesTemplate(
     appState.selectedApsa,
     appState.selectedLevel
@@ -336,24 +415,58 @@ $("btnToObservables").onclick = ()=>{
   showPage("page-observables");
 };
 
-
-// ---------- PAGE 3 : OBSERVABLES ----------
+// --- Liste des observables (configurables) ---
 
 function renderObservableList(){
   const list = $("observableList");
+  if(!list) return;
   list.innerHTML = "";
 
-  appState.observablesTemplate.forEach(obs=>{
+  (appState.observablesTemplate || []).forEach(obs=>{
     const row = document.createElement("div");
     row.className = "observable-item";
 
-    const label = document.createElement("span");
+    const label = document.createElement("div");
+    label.className = "observable-label";
     label.textContent = obs.text;
 
-    const btn = document.createElement("button");
-    btn.className = "btn btn-red";
-    btn.textContent = "X";
-    btn.onclick = ()=>{
+    const controls = document.createElement("div");
+    controls.className = "observable-controls";
+
+    const modeSelect = document.createElement("select");
+    modeSelect.className = "observable-mode";
+
+    const options = [
+      ["global","Réglages globaux"],
+      ["all","Niveaux + +/− + commentaire"],
+      ["levels","Niveaux 1–4"],
+      ["plus","+ / − uniquement"],
+      ["comment","Commentaire seul"],
+      ["plus_level","+ / − + niveaux"],
+      ["plus_comment","+ / − + commentaire"],
+      ["level_comment","Niveaux + commentaire"]
+    ];
+
+    options.forEach(([value,labelTxt])=>{
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = labelTxt;
+      modeSelect.appendChild(opt);
+    });
+
+    modeSelect.value = inferModeFromItem(obs);
+
+    modeSelect.onchange = ()=>{
+      applyModeToItem(obs, modeSelect.value);
+      saveState();
+    };
+
+    controls.appendChild(modeSelect);
+
+    const delBtn = document.createElement("button");
+    delBtn.className = "btn btn-red";
+    delBtn.textContent = "X";
+    delBtn.onclick = ()=>{
       appState.observablesTemplate =
         appState.observablesTemplate.filter(o=>o.id !== obs.id);
       saveState();
@@ -361,19 +474,25 @@ function renderObservableList(){
     };
 
     row.appendChild(label);
-    row.appendChild(btn);
+    row.appendChild(controls);
+    row.appendChild(delBtn);
+
     list.appendChild(row);
   });
 }
 
-// Ajouter un observable
+// Ajout d'un observable
 $("addObservableBtn").onclick = ()=>{
   const txt = $("addObservableInput").value.trim();
   if(!txt) return;
 
   appState.observablesTemplate.push({
     id: uid(),
-    text: txt
+    text: txt,
+    useGlobal: true,
+    showLevels: appState.globalDisplay.showLevels,
+    showPlusMinus: appState.globalDisplay.showPlusMinus,
+    showComment: appState.globalDisplay.showComment
   });
 
   $("addObservableInput").value = "";
@@ -381,25 +500,24 @@ $("addObservableBtn").onclick = ()=>{
   renderObservableList();
 };
 
-// Page suivante → choix du rôle
+// Page suivante → rôle
 $("btnToRole").onclick = ()=>{
   showPage("page-role");
 };
 
-
-// ---------- INITIALISATION PAGE ACTIVITÉ ----------
-
+// Initialisation page activité
 function initActivityPage(){
   renderLevelButtons();
   renderChampList();
   renderApsaList();
+  attachGlobalDisplayListeners();
 }
+
 // =============================
-// Bloc 3/4 : Gestion du rôle + session + UI observation
+// Bloc 3 : Rôle + session + observation
 // =============================
 
-
-// ---------- PAGE 4 : CHOIX DU RÔLE ----------
+// Choix du rôle
 
 $("roleObserver").onclick = () => {
   appState.currentRole = "observer";
@@ -424,7 +542,6 @@ function setupRoleForm() {
     $("roleTargetLabel").textContent = "Je suis observé par :";
   }
 
-  // reset affichage liste
   renderRoleTargetList();
 }
 
@@ -469,7 +586,7 @@ function renderRoleTargetList() {
   });
 }
 
-// ---------- CRÉATION DE LA SESSION ----------
+// Création de la session
 
 $("btnStartSession").onclick = () => {
   const selfName = $("roleSelfInput").value.trim();
@@ -484,7 +601,6 @@ $("btnStartSession").onclick = () => {
     return;
   }
 
-  // Création de la session
   appState.session = {
     id: uid(),
     mode: appState.currentRole, // observer | observed
@@ -497,7 +613,6 @@ $("btnStartSession").onclick = () => {
     activeTargetId: null
   };
 
-  // Transformer chaque nom en "target complet"
   targets.forEach(name => {
     appState.session.targets.push({
       id: uid(),
@@ -507,12 +622,10 @@ $("btnStartSession").onclick = () => {
     });
   });
 
-  // Activer le premier target
   if (appState.session.targets.length > 0) {
     appState.session.activeTargetId = appState.session.targets[0].id;
   }
 
-  // Nettoyage tampon
   appState.sessionTargetsTemp = [];
   $("roleSelfInput").value = "";
   $("roleTargetInput").value = "";
@@ -522,8 +635,7 @@ $("btnStartSession").onclick = () => {
   showPage("page-observation");
 };
 
-
-// ---------- PAGE 5 : OBSERVATION ----------
+// Page observation
 
 function renderObservationPage() {
   if (!appState.session) return;
@@ -532,24 +644,29 @@ function renderObservationPage() {
 
   $("sessionHeader").textContent =
     session.mode === "observer"
-      ? `Je suis observateur — ${session.selfName}`
-      : `Je suis observé — ${session.selfName}`;
+      ? `${session.selfName} observe`
+      : `${session.selfName} est observé`;
 
+  syncGlobalDisplayUI();
   renderTargetTabs();
   renderObservationArea();
 }
 
-// Ajouter un nouveau target (élève observé ou observateur)
+// Ajouter une personne pendant la session
+
 $("btnAddTarget").onclick = () => {
   const name = prompt("Nom de la personne :");
-  if (!name) return;
+  if (!name || !appState.session) return;
 
-  appState.session.targets.push({
+  const newTarget = {
     id: uid(),
     name,
     items: makeEmptyItemsFromTemplate(),
     comment: ""
-  });
+  };
+
+  appState.session.targets.push(newTarget);
+  appState.session.activeTargetId = newTarget.id;
 
   saveState();
   renderTargetTabs();
@@ -586,15 +703,21 @@ function renderObservationArea() {
   container.innerHTML = "";
 
   const target = getActiveTarget();
-  if (!target) return;
+  if (!target || !appState.session) return;
 
-  // bloc items observables
+  const session = appState.session;
+
   const card = document.createElement("div");
   card.className = "obs-card";
 
   const header = document.createElement("div");
   header.className = "obs-header";
-  header.textContent = `Observations pour : ${target.name}`;
+
+  if(session.mode === "observer"){
+    header.textContent = `${session.selfName} observe ${target.name}`;
+  }else{
+    header.textContent = `${session.selfName} est observé par ${target.name}`;
+  }
 
   card.appendChild(header);
 
@@ -602,47 +725,124 @@ function renderObservationArea() {
   body.className = "obs-body";
 
   target.items.forEach(item => {
+    const flags = getDisplayFlags(item);
+
     const row = document.createElement("div");
     row.className = "obs-row";
 
-    // Libellé observable
+    // Colonne 1 : libellé + mode
+    const labelCol = document.createElement("div");
+    labelCol.className = "obs-label";
+
     const label = document.createElement("div");
     label.textContent = item.text;
 
-    // Niveaux (4 ronds)
-    const levelGroup = document.createElement("div");
-    levelGroup.style.display = "flex";
-    levelGroup.style.gap = "4px";
+    const modeSelect = document.createElement("select");
+    modeSelect.className = "obs-mode-select";
 
-    for (let lvl = 1; lvl <= 4; lvl++) {
-      const circle = document.createElement("div");
-      circle.className = "level-circle";
-      circle.dataset.level = lvl;
-      circle.textContent = lvl;
+    [
+      ["global","Réglages globaux"],
+      ["all","Niveaux + +/− + commentaire"],
+      ["levels","Niveaux 1–4"],
+      ["plus","+ / − uniquement"],
+      ["comment","Commentaire seul"],
+      ["plus_level","+ / − + niveaux"],
+      ["plus_comment","+ / − + commentaire"],
+      ["level_comment","Niveaux + commentaire"]
+    ].forEach(([val,txt])=>{
+      const opt = document.createElement("option");
+      opt.value = val;
+      opt.textContent = txt;
+      modeSelect.appendChild(opt);
+    });
 
-      if (item.level === lvl) circle.classList.add("active");
+    modeSelect.value = inferModeFromItem(item);
+    modeSelect.onchange = ()=>{
+      applyModeToItem(item, modeSelect.value);
+      saveState();
+      renderObservationArea();
+    };
 
-      circle.onclick = () => {
-        item.level = lvl;
+    labelCol.appendChild(label);
+    labelCol.appendChild(modeSelect);
+
+    // Colonne 2 : contrôles (plus/moins + niveaux)
+    const controlsCol = document.createElement("div");
+    controlsCol.className = "obs-controls";
+
+    if(flags.showPlusMinus){
+      const pm = document.createElement("div");
+      pm.className = "pm-group";
+
+      const minusBtn = document.createElement("button");
+      minusBtn.className = "btn-circle";
+      minusBtn.textContent = "−";
+      minusBtn.onclick = ()=>{
+        item.count = Math.max(0, (item.count || 0) - 1);
         saveState();
         renderObservationArea();
       };
 
-      levelGroup.appendChild(circle);
+      const countSpan = document.createElement("span");
+      countSpan.className = "pm-count";
+      countSpan.textContent = item.count || 0;
+
+      const plusBtn = document.createElement("button");
+      plusBtn.className = "btn-circle";
+      plusBtn.textContent = "+";
+      plusBtn.onclick = ()=>{
+        item.count = (item.count || 0) + 1;
+        saveState();
+        renderObservationArea();
+      };
+
+      pm.appendChild(minusBtn);
+      pm.appendChild(countSpan);
+      pm.appendChild(plusBtn);
+      controlsCol.appendChild(pm);
     }
 
-    // zone commentaires individuels
-    const noteInput = document.createElement("textarea");
-    noteInput.placeholder = "Note / commentaire pour cet observable";
-    noteInput.value = item.note;
-    noteInput.oninput = () => {
-      item.note = noteInput.value;
-      saveState();
-    };
+    if(flags.showLevels){
+      const levelGroup = document.createElement("div");
+      levelGroup.style.display = "flex";
+      levelGroup.style.gap = "4px";
 
-    row.appendChild(label);
-    row.appendChild(levelGroup);
-    row.appendChild(noteInput);
+      for (let lvl = 1; lvl <= 4; lvl++) {
+        const circle = document.createElement("div");
+        circle.className = "level-circle";
+        circle.dataset.level = lvl;
+        circle.textContent = lvl;
+
+        if (item.level === lvl) circle.classList.add("active");
+
+        circle.onclick = () => {
+          item.level = lvl;
+          saveState();
+          renderObservationArea();
+        };
+
+        levelGroup.appendChild(circle);
+      }
+
+      controlsCol.appendChild(levelGroup);
+    }
+
+    // Colonne 3 : commentaire
+    const commentCol = document.createElement("div");
+    if(flags.showComment){
+      const noteInput = document.createElement("textarea");
+      noteInput.placeholder = "Note / commentaire pour cet observable";
+      noteInput.value = item.note || "";
+      noteInput.oninput = () => {
+        item.note = noteInput.value;
+        saveState();
+      };
+      commentCol.appendChild(noteInput);
+    }
+
+    row.appendChild(labelCol);
+    row.appendChild(controlsCol);
+    row.appendChild(commentCol);
 
     body.appendChild(row);
   });
@@ -650,7 +850,7 @@ function renderObservationArea() {
   // Commentaire global pour le target
   const commentBlock = document.createElement("textarea");
   commentBlock.placeholder = "Commentaire global pour " + target.name;
-  commentBlock.value = target.comment;
+  commentBlock.value = target.comment || "";
   commentBlock.oninput = () => {
     target.comment = commentBlock.value;
     saveState();
@@ -662,8 +862,7 @@ function renderObservationArea() {
   container.appendChild(card);
 }
 
-
-// ---------- BOUTONS DE NAVIGATION ----------
+// Boutons de navigation
 
 $("btnToBilan").onclick = () => {
   renderBilanPage();
@@ -682,12 +881,11 @@ $("btnEndSession").onclick = () => {
   saveState();
   showPage("page-cover");
 };
+
 // =============================
-// Bloc 4/4 : Bilan + Export PDF
+// Bloc 4 : Bilan + Export PDF
 // =============================
 
-
-// ---------- PAGE 6 : BILAN ----------
 function renderBilanPage() {
   const container = $("bilanContent");
   container.innerHTML = "";
@@ -695,7 +893,6 @@ function renderBilanPage() {
   const session = appState.session;
   if (!session) return;
 
-  // Titre
   const info = document.createElement("div");
   info.className = "bilan-block";
   info.innerHTML = `
@@ -707,22 +904,24 @@ function renderBilanPage() {
   `;
   container.appendChild(info);
 
-  // Liste des personnes observées / observateurs
   session.targets.forEach(target => {
     const bloc = document.createElement("div");
     bloc.className = "bilan-block";
 
-    bloc.innerHTML = `
-      <h3>${session.mode === "observer" ? "J’ai observé" : "J’ai été observé par"} : ${target.name}</h3>
-    `;
+    const titre =
+      session.mode === "observer"
+        ? `${session.selfName} observe ${target.name}`
+        : `${session.selfName} est observé par ${target.name}`;
 
-    // Ajout des observables sous forme de liste
+    bloc.innerHTML = `<h3>${titre}</h3>`;
+
     const ul = document.createElement("ul");
     target.items.forEach(item => {
       const li = document.createElement("li");
       li.innerHTML = `
         <strong>${item.text}</strong><br>
         Niveau : ${item.level} / 4<br>
+        Compteur (+/−) : ${item.count || 0}<br>
         ${item.note ? `Commentaire : ${item.note}<br>` : ""}
       `;
       ul.appendChild(li);
@@ -740,8 +939,7 @@ function renderBilanPage() {
   });
 }
 
-
-// ---------- EXPORT PDF ----------
+// Export PDF
 
 $("btnExportPDF").onclick = () => {
   if (!appState.session) {
@@ -751,36 +949,32 @@ $("btnExportPDF").onclick = () => {
 
   const session = appState.session;
 
-  // Titre PDF
   const pdfContent = [
     { text: "EPS OBSERVER", style: "header", alignment: "center" },
-    { text: "\n" }
+    { text: "\n" },
+    {
+      text: session.mode === "observer"
+        ? `COMPÉTENCE D’OBSERVATEUR — ${session.selfName}`
+        : `DOSSIER D’OBSERVATION — ${session.selfName}`,
+      style: "title",
+      alignment: "center"
+    },
+    { text: "\n" },
+    {
+      text: `APSA : ${session.apsa} — Niveau ${session.level}\nDate : ${new Date(session.dateIso).toLocaleString()}`,
+      style: "subheader"
+    },
+    { text: "\n\n" }
   ];
 
-  pdfContent.push({
-    text: session.mode === "observer"
-      ? `COMPÉTENCE D’OBSERVATEUR — ${session.selfName}`
-      : `DOSSIER D’OBSERVATION — ${session.selfName}`,
-    style: "title",
-    alignment: "center"
-  });
-
-  pdfContent.push({ text: "\n" });
-
-  pdfContent.push({
-    text: `APSA : ${session.apsa} — Niveau ${session.level}\nDate : ${new Date(session.dateIso).toLocaleString()}`,
-    style: "subheader"
-  });
-
-  pdfContent.push({ text: "\n\n" });
-
-  // SECTION pour chaque personne observée / observateur
   session.targets.forEach(target => {
+    const titre =
+      session.mode === "observer"
+        ? `${session.selfName} observe : ${target.name}`
+        : `${session.selfName} est observé par : ${target.name}`;
+
     pdfContent.push({
-      text:
-        (session.mode === "observer"
-          ? `J’ai observé : `
-          : `J’ai été observé par : `) + target.name,
+      text: titre,
       style: "sectionHeader"
     });
 
@@ -788,6 +982,7 @@ $("btnExportPDF").onclick = () => {
       [
         { text: "Observable", style: "tableHeader" },
         { text: "Niveau (1-4)", style: "tableHeader" },
+        { text: "Compteur (+/−)", style: "tableHeader" },
         { text: "Commentaire", style: "tableHeader" }
       ]
     ];
@@ -796,6 +991,7 @@ $("btnExportPDF").onclick = () => {
       tableBody.push([
         item.text,
         item.level.toString(),
+        (item.count || 0).toString(),
         item.note || ""
       ]);
     });
@@ -803,7 +999,7 @@ $("btnExportPDF").onclick = () => {
     pdfContent.push({
       style: "table",
       table: {
-        widths: ["*", 60, "*"],
+        widths: ["*", 50, 60, "*"],
         body: tableBody
       }
     });
@@ -818,7 +1014,6 @@ $("btnExportPDF").onclick = () => {
     pdfContent.push({ text: "\n\n" });
   });
 
-  // Styles PDF
   const styles = {
     header: { fontSize: 24, bold: true },
     title: { fontSize: 18, bold: true },
