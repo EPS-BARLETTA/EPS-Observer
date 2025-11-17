@@ -1,6 +1,6 @@
 // =============================
 // EPS OBSERVER - APP.JS
-// Version avec couleurs, options in situ, bilan + page print.html
+// Option 2 : pages séparées, observables simplifiés, print.html
 // =============================
 
 // --- Constantes pédagogiques (CA, APSA, observables par défaut) ---
@@ -81,30 +81,22 @@ const OBS_COLORS = [
   "#8b5cf6", "#ec4899", "#f97373"
 ];
 
-// --- État global de l'application ---
+// --- État global ---
 
 const STORAGE_KEY = "eps_observer_v5_state";
 
 const appState = {
-  // activité
   selectedChampId: null,
   selectedApsa: null,
   selectedLevel: 2,
-
   customApsaByChamp: {},
-
-  // observables pour la session (modèle)
-  // chaque observable : {id,text,useComment,usePlusMinus,useLevels,color}
   observablesTemplate: [],
-
   currentRole: null,
-
   session: null,
-
   sessionTargetsTemp: []
 };
 
-// --- Helpers simples ---
+// Helpers
 
 function $(id){
   return document.getElementById(id);
@@ -114,12 +106,11 @@ function uid(){
   return Math.random().toString(36).slice(2);
 }
 
-// --- Stockage local ---
+// Stockage
 
 function saveState(){
   try{
-    const payload = JSON.stringify(appState);
-    localStorage.setItem(STORAGE_KEY, payload);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
   }catch(e){
     console.error("Erreur saveState", e);
   }
@@ -129,14 +120,13 @@ function loadState(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if(!raw) return;
-    const parsed = JSON.parse(raw);
-    Object.assign(appState, parsed || {});
+    Object.assign(appState, JSON.parse(raw) || {});
   }catch(e){
-    console.warn("Impossible de charger l'état, on repart propre.");
+    console.warn("Impossible de charger l'état.");
   }
 }
 
-// --- Navigation entre pages ---
+// Navigation pages
 
 function showPage(id){
   const pages = document.querySelectorAll(".page");
@@ -145,7 +135,7 @@ function showPage(id){
   if(el) el.classList.add("visible");
 }
 
-// --- Récupérer données utiles ---
+// Utilitaires APSA / observables
 
 function getChampById(id){
   return CHAMPS.find(c => c.id === id) || null;
@@ -158,10 +148,9 @@ function getAllApsaForChamp(champId){
   return [...champ.baseAPSA, ...customs];
 }
 
-// Créer la liste d'observables à partir de l'APSA + niveau
 function buildObservablesTemplate(apsa, niveau){
   const base = DEFAULT_OBS[apsa] || ["Observable 1","Observable 2","Observable 3"];
-  const champ = CHAMPS.find(c => c.baseAPSA.includes(apsa)) || CHAMPS[3]; // CA4 par défaut
+  const champ = CHAMPS.find(c => c.baseAPSA.includes(apsa)) || CHAMPS[3];
   const hints = CA_LEVEL_HINTS[champ.id] || {};
   const hint = hints[niveau] || "";
 
@@ -169,13 +158,13 @@ function buildObservablesTemplate(apsa, niveau){
     id: uid(),
     text: hint ? `${txt} — ${hint}` : txt,
     useComment: true,
-    usePlusMinus: true,    // tous activés par défaut
+    usePlusMinus: true,
     useLevels: true,
     color: OBS_COLORS[index % OBS_COLORS.length]
   }));
 }
 
-// --- Session helpers ---
+// Session helpers
 
 function makeEmptyItemsFromTemplate(){
   return (appState.observablesTemplate || []).map(o => ({
@@ -199,14 +188,12 @@ function getActiveTarget(){
   ) || null;
 }
 
-// Charger l'état au démarrage
+// Chargement initial
 loadState();
 
 // =============================
-// Bloc 2/4 : Page Activité & Observables
+// PAGE 2 : ACTIVITÉ
 // =============================
-
-// ---------- PAGE 2 : ACTIVITÉ ----------
 
 function renderLevelButtons(){
   const container = $("levelButtons");
@@ -308,7 +295,6 @@ if(btnToObservables){
       alert("Sélectionnez un CA et une APSA.");
       return;
     }
-
     appState.observablesTemplate = buildObservablesTemplate(
       appState.selectedApsa,
       appState.selectedLevel
@@ -332,7 +318,9 @@ if(btnBackToCover){
   };
 }
 
-// ---------- PAGE 3 : OBSERVABLES ----------
+// =============================
+// PAGE 3 : OBSERVABLES
+// =============================
 
 function renderObservableList(){
   const list = $("observableList");
@@ -347,12 +335,13 @@ function renderObservableList(){
       obs.color = OBS_COLORS[index % OBS_COLORS.length];
     }
 
+    // Wrapper visuel
     const card = document.createElement("div");
     card.className = "obs-config-card";
     card.style.borderLeft = `6px solid ${obs.color}`;
 
-    const header = document.createElement("div");
-    header.className = "obs-config-header";
+    const row = document.createElement("div");
+    row.className = "row";
 
     const input = document.createElement("input");
     input.type = "text";
@@ -361,6 +350,7 @@ function renderObservableList(){
       obs.text = input.value;
       saveState();
     };
+    input.style.flex = "1";
 
     const delBtn = document.createElement("button");
     delBtn.className = "btn btn-red small";
@@ -372,51 +362,9 @@ function renderObservableList(){
       renderObservableList();
     };
 
-    header.appendChild(input);
-    header.appendChild(delBtn);
-    card.appendChild(header);
-
-    const opts = document.createElement("div");
-    opts.className = "obs-config-options";
-
-    const optComment = document.createElement("label");
-    const chkComment = document.createElement("input");
-    chkComment.type = "checkbox";
-    chkComment.checked = obs.useComment;
-    chkComment.onchange = ()=>{
-      obs.useComment = chkComment.checked;
-      saveState();
-    };
-    optComment.appendChild(chkComment);
-    optComment.appendChild(document.createTextNode("Commentaire"));
-
-    const optPM = document.createElement("label");
-    const chkPM = document.createElement("input");
-    chkPM.type = "checkbox";
-    chkPM.checked = obs.usePlusMinus;
-    chkPM.onchange = ()=>{
-      obs.usePlusMinus = chkPM.checked;
-      saveState();
-    };
-    optPM.appendChild(chkPM);
-    optPM.appendChild(document.createTextNode("Compteur +/-"));
-
-    const optLevels = document.createElement("label");
-    const chkLv = document.createElement("input");
-    chkLv.type = "checkbox";
-    chkLv.checked = obs.useLevels;
-    chkLv.onchange = ()=>{
-      obs.useLevels = chkLv.checked;
-      saveState();
-    };
-    optLevels.appendChild(chkLv);
-    optLevels.appendChild(document.createTextNode("Niveaux 1–4"));
-
-    opts.appendChild(optComment);
-    opts.appendChild(optPM);
-    opts.appendChild(optLevels);
-
-    card.appendChild(opts);
+    row.appendChild(input);
+    row.appendChild(delBtn);
+    card.appendChild(row);
     list.appendChild(card);
   });
 }
@@ -446,7 +394,7 @@ if(addObservableBtn){
   };
 }
 
-// Options globales
+// Options globales (appliquées à tous les observables)
 const btnApplyGlobalOptions = $("btnApplyGlobalOptions");
 if(btnApplyGlobalOptions){
   btnApplyGlobalOptions.onclick = ()=>{
@@ -485,16 +433,13 @@ function initActivityPage(){
   renderLevelButtons();
   renderChampList();
   renderApsaList();
-
   const gpm = $("globalUsePlusMinus");
   if (gpm) gpm.checked = true;
 }
 
 // =============================
-// Bloc 3/4 : Gestion du rôle + session + UI observation
+// PAGE 4 : RÔLE
 // =============================
-
-// PAGE 4 : CHOIX DU RÔLE
 
 const roleObserverBtn = $("roleObserver");
 if(roleObserverBtn){
@@ -640,7 +585,9 @@ if(btnStartSession){
   };
 }
 
+// =============================
 // PAGE 5 : OBSERVATION
+// =============================
 
 function renderObservationPage() {
   if (!appState.session) return;
@@ -763,7 +710,7 @@ function renderObservationArea() {
     row.className = "obs-row";
     row.style.borderLeftColor = color;
 
-    // Libellé observable centré + couleur
+    // Libellé observable centré
     const label = document.createElement("div");
     label.textContent = item.text;
     label.classList.add("centered");
@@ -802,7 +749,7 @@ function renderObservationArea() {
     const controlsRow = document.createElement("div");
     controlsRow.className = "obs-controls-row";
 
-    // Groupe compteur (un seul compteur + / -)
+    // Compteur + / -
     if(item.usePlusMinus){
       const pmGroup = document.createElement("div");
       pmGroup.className = "pm-group";
@@ -816,7 +763,7 @@ function renderObservationArea() {
 
       const countSpan = document.createElement("span");
       countSpan.className = "pm-count";
-      countSpan.textContent = item.plus; // affiche uniquement le nombre de "+"
+      countSpan.textContent = item.plus;
 
       const incBtn = document.createElement("button");
       incBtn.className = "pm-btn pm-plus";
@@ -888,7 +835,7 @@ function renderObservationArea() {
     body.appendChild(row);
   });
 
-  // Commentaire global pour la personne
+  // Commentaire global
   const commentBlock = document.createElement("textarea");
   commentBlock.placeholder = "Commentaire global pour " + target.name;
   commentBlock.value = target.comment;
@@ -920,19 +867,8 @@ if(btnBackToSession){
   };
 }
 
-const btnEndSession = $("btnEndSession");
-if(btnEndSession){
-  btnEndSession.onclick = () => {
-    if (!confirm("Terminer la session ? Cela ne supprime rien mais ferme le mode.")) return;
-
-    appState.session = null;
-    saveState();
-    showPage("page-cover");
-  };
-}
-
 // =============================
-// Bloc 4/4 : Bilan (HTML) + Export print.html
+// PAGE 6 : BILAN + print.html
 // =============================
 
 function renderBilanPage() {
@@ -971,18 +907,12 @@ function renderBilanPage() {
     `;
 
     const table = document.createElement("table");
-    table.style.width = "100%";
-    table.style.borderCollapse = "collapse";
-    table.style.fontSize = "13px";
 
     const thead = document.createElement("thead");
     const hr = document.createElement("tr");
     ["Observable","Niveau (1–4)","Compteur (+)","Commentaire"].forEach(t=>{
       const th = document.createElement("th");
       th.textContent = t;
-      th.style.border = "1px solid #000";
-      th.style.padding = "4px";
-      th.style.background = "#f3f4f6";
       hr.appendChild(th);
     });
     thead.appendChild(hr);
@@ -999,22 +929,14 @@ function renderBilanPage() {
 
       const tdObs = document.createElement("td");
       tdObs.textContent = item.text;
-      tdObs.style.border = "1px solid #000";
-      tdObs.style.padding = "4px";
 
       const tdLevel = document.createElement("td");
-      tdLevel.style.border = "1px solid #000";
-      tdLevel.style.padding = "4px";
       tdLevel.textContent = (useLevels && typeof item.level === "number") ? item.level : "";
 
       const tdCount = document.createElement("td");
-      tdCount.style.border = "1px solid #000";
-      tdCount.style.padding = "4px";
       tdCount.textContent = usePlusMinus ? (item.plus || 0) : "";
 
       const tdNote = document.createElement("td");
-      tdNote.style.border = "1px solid #000";
-      tdNote.style.padding = "4px";
       tdNote.textContent = useComment ? (item.note || "") : "";
 
       tr.appendChild(tdObs);
@@ -1037,23 +959,26 @@ function renderBilanPage() {
     container.appendChild(bloc);
   });
 
-  // Bouton reset
+  // Bouton reset très protégé
   const resetBtn = $("btnResetAll");
   if (resetBtn) {
     resetBtn.onclick = () => {
-      const ok = confirm(
-        "Êtes-vous sûr de vouloir tout effacer ?\n" +
-        "Vous allez perdre toutes les observations effectuées.\n" +
-        "Le PDF doit avoir été exporté et envoyé par AirDrop à votre prof."
+      const ok1 = confirm(
+        "ATTENTION : vous allez effacer TOUTES les observations de cette séance.\n\n" +
+        "Assurez-vous que le PDF a bien été exporté et envoyé par AirDrop à votre prof.\n\n" +
+        "Continuer ?"
       );
-      if (!ok) return;
+      if (!ok1) return;
+      const ok2 = confirm("Confirmez une deuxième fois pour tout effacer définitivement.");
+      if (!ok2) return;
+
       localStorage.removeItem(STORAGE_KEY);
       window.location.reload();
     };
   }
 }
 
-// EXPORT PDF → print.html
+// Export PDF → print.html
 
 const btnExportPDF = $("btnExportPDF");
 if(btnExportPDF){
@@ -1062,7 +987,6 @@ if(btnExportPDF){
       alert("Aucune session active.");
       return;
     }
-    // on s'assure que tout est bien sauvegardé
     saveState();
     window.open("print.html", "_blank");
   };

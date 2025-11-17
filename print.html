@@ -107,7 +107,6 @@
     html += "<p><strong>Date :</strong> " + d.toLocaleString() + "</p>";
     html += "</div>";
 
-    // Par personne (observée / observateur)
     (session.targets || []).forEach(target=>{
       html += '<div class="block">';
       const title = session.mode === "observer"
@@ -144,7 +143,6 @@
 
     root.innerHTML = html;
 
-    // On lance l'impression après un petit délai pour laisser le rendu se faire
     setTimeout(()=>{
       window.print();
     }, 500);
