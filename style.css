@@ -281,7 +281,22 @@ textarea::placeholder{
   outline-offset:2px;
 }
 
-/* PAGE RÔLE */
+/* PAGE RÔLE : centré verticalement */
+
+#page-role{
+  min-height:70vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+
+#page-role > h2,
+#page-role .role-buttons,
+#page-role #roleForm{
+  max-width:480px;
+  margin-left:auto;
+  margin-right:auto;
+}
 
 #roleForm.hidden{
   display:none;
@@ -353,14 +368,25 @@ textarea::placeholder{
   display:flex;
   flex-direction:column;
   gap:6px;
-  padding:4px 0;
+  padding:8px 10px;
+  border-radius:12px;
+  border-left:6px solid transparent;
 }
+
+.obs-label{
+  font-weight:600;
+  text-align:center;
+}
+
+/* Ligne de contrôles : compteur à gauche, niveaux à droite */
 
 .obs-controls-row{
   display:flex;
   flex-wrap:wrap;
   gap:8px;
   align-items:center;
+  justify-content:space-between;
+  width:100%;
 }
 
 /* PETITES ÉTIQUETTES */
@@ -464,6 +490,7 @@ textarea::placeholder{
   padding:8px;
   box-shadow:var(--shadow);
   margin-bottom:8px;
+  border-left:6px solid transparent;
 }
 
 .obs-config-header{
@@ -513,34 +540,51 @@ textarea::placeholder{
   gap:4px;
 }
 
-.pm-label{
-  width:18px;
-  text-align:center;
-  font-weight:600;
-}
-
 .pm-count{
-  min-width:24px;
+  min-width:28px;
   text-align:center;
-  padding:2px 4px;
+  padding:4px 6px;
   border-radius:999px;
   border:1px solid var(--border);
   background:#f9fafb;
-  font-size:12px;
+  font-size:13px;
+  font-weight:600;
 }
 
 .pm-btn{
   border-radius:999px;
   border:1px solid var(--border);
-  padding:2px 6px;
+  padding:4px 8px;
   background:#e5e7eb;
   cursor:pointer;
-  font-size:12px;
+  font-size:14px;
+}
+
+.pm-btn.pm-plus{
+  background:var(--green);
+  color:#ffffff;
+  border-color:#16a34a;
+}
+
+.pm-btn.pm-minus{
+  background:var(--red);
+  color:#ffffff;
+  border-color:#ef4444;
 }
 
 .pm-btn:active{
   transform:scale(0.96);
 }
+
+/* options en direct sur la page d'observation */
+
+.obs-live-options{
+  margin-top:4px;
+  margin-bottom:2px;
+  font-size:11px;
+}
+
+/* Responsive */
 
 @media (max-width:800px){
   .nav-row{
@@ -550,5 +594,9 @@ textarea::placeholder{
 
   .btn-role{
     width:100%;
+  }
+
+  .obs-controls-row{
+    flex-direction:row;
   }
 }
