@@ -7,10 +7,6 @@
 
   <!-- Fichiers CSS -->
   <link rel="stylesheet" href="./style.css">
-
-  <!-- Librairie PDF locale -->
-  <script src="./lib/pdfmake.min.js"></script>
-  <script src="./lib/vfs_fonts.js"></script>
 </head>
 
 <body>
@@ -63,7 +59,7 @@
       <h3>Réglages rapides (tous les observables)</h3>
       <div class="obs-global-options">
         <label><input type="checkbox" id="globalUseComment" checked> Commentaire</label>
-        <label><input type="checkbox" id="globalUsePlusMinus"> + / -</label>
+        <label><input type="checkbox" id="globalUsePlusMinus" checked> + / -</label>
         <label><input type="checkbox" id="globalUseLevels" checked> Niveaux 1–4</label>
         <button id="btnApplyGlobalOptions" class="btn btn-blue small">Appliquer à tous</button>
       </div>
@@ -140,6 +136,7 @@
     <div class="row nav-row">
       <button id="btnExportPDF" class="btn btn-green-dark">📄 Exporter le PDF</button>
       <button id="btnBackToSession" class="btn btn-blue">Retour à la session</button>
+      <button id="btnResetAll" class="btn btn-red">Réinitialiser tout</button>
     </div>
   </section>
 
