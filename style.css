@@ -45,11 +45,11 @@ html,body{
  ******************************************/
 
 .page{
-  display:none;           /* 🔥 CORRECTION */
+  display:none;
 }
 
 .page.visible{
-  display:block;          /* 🔥 CORRECTION */
+  display:block;
   animation:fadeIn .25s ease;
 }
 

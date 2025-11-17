@@ -1,6 +1,6 @@
 // =============================
 // EPS OBSERVER - APP.JS
-// Version avec couleurs, options in situ, bilan + PDF tableau
+// Version avec couleurs, options in situ, bilan + page print.html
 // =============================
 
 // --- Constantes pédagogiques (CA, APSA, observables par défaut) ---
@@ -169,46 +169,13 @@ function buildObservablesTemplate(apsa, niveau){
     id: uid(),
     text: hint ? `${txt} — ${hint}` : txt,
     useComment: true,
-    usePlusMinus: true,    // ✅ tous activés par défaut
+    usePlusMinus: true,    // tous activés par défaut
     useLevels: true,
     color: OBS_COLORS[index % OBS_COLORS.length]
   }));
 }
 
-// --- Session (structure) ---
-/*
- session = {
-   id: "...",
-   mode: "observer" | "observed",
-   dateIso: "...",
-   champId: "CA4",
-   apsa: "Basket-ball",
-   level: 2,
-   selfName: "Jérôme",
-   targets: [
-     {
-       id: "...",
-       name: "Paul",
-       items: [
-         {
-           id: observableId,
-           text: "...",
-           plus: 0,         // compteur net
-           minus: 0,        // plus utilisé pour l'affichage
-           level: null,
-           note: "",
-           useComment: true,
-           usePlusMinus: true,
-           useLevels: true,
-           color: "#ef4444"
-         }, ...
-       ],
-       comment: ""
-     }
-   ],
-   activeTargetId: "..."
- }
-*/
+// --- Session helpers ---
 
 function makeEmptyItemsFromTemplate(){
   return (appState.observablesTemplate || []).map(o => ({
@@ -243,6 +210,7 @@ loadState();
 
 function renderLevelButtons(){
   const container = $("levelButtons");
+  if(!container) return;
   container.innerHTML = "";
 
   for(let lvl=1; lvl<=4; lvl++){
@@ -264,6 +232,7 @@ function renderLevelButtons(){
 
 function renderChampList(){
   const container = $("champList");
+  if(!container) return;
   container.innerHTML = "";
 
   CHAMPS.forEach(champ=>{
@@ -287,6 +256,7 @@ function renderChampList(){
 
 function renderApsaList(){
   const container = $("apsaList");
+  if(!container) return;
   container.innerHTML = "";
 
   if(!appState.selectedChampId) return;
@@ -312,42 +282,55 @@ function renderApsaList(){
 }
 
 // Ajouter une APSA
-$("addApsaBtn").onclick = ()=>{
-  const txt = $("addApsaInput").value.trim();
-  if(!txt || !appState.selectedChampId) return;
+const addApsaBtn = $("addApsaBtn");
+if(addApsaBtn){
+  addApsaBtn.onclick = ()=>{
+    const input = $("addApsaInput");
+    if(!input) return;
+    const txt = input.value.trim();
+    if(!txt || !appState.selectedChampId) return;
 
-  if(!appState.customApsaByChamp[appState.selectedChampId])
-    appState.customApsaByChamp[appState.selectedChampId] = [];
+    if(!appState.customApsaByChamp[appState.selectedChampId])
+      appState.customApsaByChamp[appState.selectedChampId] = [];
 
-  appState.customApsaByChamp[appState.selectedChampId].push(txt);
-  $("addApsaInput").value = "";
-  saveState();
-  renderApsaList();
-};
+    appState.customApsaByChamp[appState.selectedChampId].push(txt);
+    input.value = "";
+    saveState();
+    renderApsaList();
+  };
+}
 
 // Aller aux observables
-$("btnToObservables").onclick = ()=>{
-  if(!appState.selectedChampId || !appState.selectedApsa){
-    alert("Sélectionnez un CA et une APSA.");
-    return;
-  }
+const btnToObservables = $("btnToObservables");
+if(btnToObservables){
+  btnToObservables.onclick = ()=>{
+    if(!appState.selectedChampId || !appState.selectedApsa){
+      alert("Sélectionnez un CA et une APSA.");
+      return;
+    }
 
-  appState.observablesTemplate = buildObservablesTemplate(
-    appState.selectedApsa,
-    appState.selectedLevel
-  );
+    appState.observablesTemplate = buildObservablesTemplate(
+      appState.selectedApsa,
+      appState.selectedLevel
+    );
 
-  saveState();
-  renderObservableList();
-  $("obsApsaLabel").textContent =
-    `APSA : ${appState.selectedApsa} (Niveau ${appState.selectedLevel})`;
-  showPage("page-observables");
-};
+    saveState();
+    renderObservableList();
+    const label = $("obsApsaLabel");
+    if(label){
+      label.textContent = `APSA : ${appState.selectedApsa} (Niveau ${appState.selectedLevel})`;
+    }
+    showPage("page-observables");
+  };
+}
 
 // Retour couverture
-$("btnBackToCover").onclick = ()=>{
-  showPage("page-cover");
-};
+const btnBackToCover = $("btnBackToCover");
+if(btnBackToCover){
+  btnBackToCover.onclick = ()=>{
+    showPage("page-cover");
+  };
+}
 
 // ---------- PAGE 3 : OBSERVABLES ----------
 
@@ -439,57 +422,70 @@ function renderObservableList(){
 }
 
 // Ajouter un observable
-$("addObservableBtn").onclick = ()=>{
-  const txt = $("addObservableInput").value.trim();
-  if(!txt) return;
+const addObservableBtn = $("addObservableBtn");
+if(addObservableBtn){
+  addObservableBtn.onclick = ()=>{
+    const input = $("addObservableInput");
+    if(!input) return;
+    const txt = input.value.trim();
+    if(!txt) return;
 
-  const index = appState.observablesTemplate.length;
-  appState.observablesTemplate.push({
-    id: uid(),
-    text: txt,
-    useComment: true,
-    usePlusMinus: true,
-    useLevels: true,
-    color: OBS_COLORS[index % OBS_COLORS.length]
-  });
+    const index = appState.observablesTemplate.length;
+    appState.observablesTemplate.push({
+      id: uid(),
+      text: txt,
+      useComment: true,
+      usePlusMinus: true,
+      useLevels: true,
+      color: OBS_COLORS[index % OBS_COLORS.length]
+    });
 
-  $("addObservableInput").value = "";
-  saveState();
-  renderObservableList();
-};
+    input.value = "";
+    saveState();
+    renderObservableList();
+  };
+}
 
 // Options globales
-$("btnApplyGlobalOptions").onclick = ()=>{
-  const useComment = $("globalUseComment").checked;
-  const usePlusMinus = $("globalUsePlusMinus").checked;
-  const useLevels = $("globalUseLevels").checked;
+const btnApplyGlobalOptions = $("btnApplyGlobalOptions");
+if(btnApplyGlobalOptions){
+  btnApplyGlobalOptions.onclick = ()=>{
+    const useComment = $("globalUseComment")?.checked ?? true;
+    const usePlusMinus = $("globalUsePlusMinus")?.checked ?? true;
+    const useLevels = $("globalUseLevels")?.checked ?? true;
 
-  appState.observablesTemplate = (appState.observablesTemplate || []).map(o=>({
-    ...o,
-    useComment,
-    usePlusMinus,
-    useLevels
-  }));
-  saveState();
-  renderObservableList();
-};
+    appState.observablesTemplate = (appState.observablesTemplate || []).map(o=>({
+      ...o,
+      useComment,
+      usePlusMinus,
+      useLevels
+    }));
+    saveState();
+    renderObservableList();
+  };
+}
 
 // Page suivante → rôle
-$("btnToRole").onclick = ()=>{
-  showPage("page-role");
-};
+const btnToRole = $("btnToRole");
+if(btnToRole){
+  btnToRole.onclick = ()=>{
+    showPage("page-role");
+  };
+}
 
 // Retour activité
-$("btnBackToActivity").onclick = ()=>{
-  showPage("page-activity");
-};
+const btnBackToActivity = $("btnBackToActivity");
+if(btnBackToActivity){
+  btnBackToActivity.onclick = ()=>{
+    showPage("page-activity");
+  };
+}
 
 function initActivityPage(){
   renderLevelButtons();
   renderChampList();
   renderApsaList();
 
-  // Met le global compteur coché par défaut
   const gpm = $("globalUsePlusMinus");
   if (gpm) gpm.checked = true;
 }
@@ -500,20 +496,28 @@ function initActivityPage(){
 
 // PAGE 4 : CHOIX DU RÔLE
 
-$("roleObserver").onclick = () => {
-  appState.currentRole = "observer";
-  saveState();
-  setupRoleForm();
-};
+const roleObserverBtn = $("roleObserver");
+if(roleObserverBtn){
+  roleObserverBtn.onclick = () => {
+    appState.currentRole = "observer";
+    saveState();
+    setupRoleForm();
+  };
+}
 
-$("roleObserved").onclick = () => {
-  appState.currentRole = "observed";
-  saveState();
-  setupRoleForm();
-};
+const roleObservedBtn = $("roleObserved");
+if(roleObservedBtn){
+  roleObservedBtn.onclick = () => {
+    appState.currentRole = "observed";
+    saveState();
+    setupRoleForm();
+  };
+}
 
 function setupRoleForm() {
-  $("roleForm").classList.remove("hidden");
+  const form = $("roleForm");
+  if(!form) return;
+  form.classList.remove("hidden");
 
   if (appState.currentRole === "observer") {
     $("roleTitle").textContent = "Je suis observateur";
@@ -527,30 +531,39 @@ function setupRoleForm() {
 }
 
 // Retour observables
-$("btnBackToObservables").onclick = ()=>{
-  showPage("page-observables");
-};
+const btnBackToObservables = $("btnBackToObservables");
+if(btnBackToObservables){
+  btnBackToObservables.onclick = ()=>{
+    showPage("page-observables");
+  };
+}
 
 // Ajout de cibles
-$("roleTargetInput").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    addRoleTarget();
-  }
-});
+const roleTargetInput = $("roleTargetInput");
+if(roleTargetInput){
+  roleTargetInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addRoleTarget();
+    }
+  });
+}
 
 function addRoleTarget() {
-  const txt = $("roleTargetInput").value.trim();
+  const input = $("roleTargetInput");
+  if(!input) return;
+  const txt = input.value.trim();
   if (!txt) return;
 
   appState.sessionTargetsTemp.push(txt);
 
-  $("roleTargetInput").value = "";
+  input.value = "";
   renderRoleTargetList();
 }
 
 function renderRoleTargetList() {
   const container = $("roleTargetList");
+  if(!container) return;
   container.innerHTML = "";
 
   const arr = appState.sessionTargetsTemp || [];
@@ -574,53 +587,58 @@ function renderRoleTargetList() {
 
 // CRÉATION SESSION
 
-$("btnStartSession").onclick = () => {
-  const selfName = $("roleSelfInput").value.trim();
-  if (!selfName) {
-    alert("Entrez votre prénom.");
-    return;
-  }
+const btnStartSession = $("btnStartSession");
+if(btnStartSession){
+  btnStartSession.onclick = () => {
+    const selfInput = $("roleSelfInput");
+    const selfName = selfInput ? selfInput.value.trim() : "";
+    if (!selfName) {
+      alert("Entrez votre prénom.");
+      return;
+    }
 
-  const targets = appState.sessionTargetsTemp || [];
-  if (targets.length === 0) {
-    alert("Ajoutez au moins une personne.");
-    return;
-  }
+    const targets = appState.sessionTargetsTemp || [];
+    if (targets.length === 0) {
+      alert("Ajoutez au moins une personne.");
+      return;
+    }
 
-  appState.session = {
-    id: uid(),
-    mode: appState.currentRole,
-    dateIso: new Date().toISOString(),
-    champId: appState.selectedChampId,
-    apsa: appState.selectedApsa,
-    level: appState.selectedLevel,
-    selfName,
-    targets: [],
-    activeTargetId: null
-  };
-
-  targets.forEach(name => {
-    appState.session.targets.push({
+    appState.session = {
       id: uid(),
-      name,
-      items: makeEmptyItemsFromTemplate(),
-      comment: ""
+      mode: appState.currentRole,
+      dateIso: new Date().toISOString(),
+      champId: appState.selectedChampId,
+      apsa: appState.selectedApsa,
+      level: appState.selectedLevel,
+      selfName,
+      targets: [],
+      activeTargetId: null
+    };
+
+    targets.forEach(name => {
+      appState.session.targets.push({
+        id: uid(),
+        name,
+        items: makeEmptyItemsFromTemplate(),
+        comment: ""
+      });
     });
-  });
 
-  if (appState.session.targets.length > 0) {
-    appState.session.activeTargetId = appState.session.targets[0].id;
-  }
+    if (appState.session.targets.length > 0) {
+      appState.session.activeTargetId = appState.session.targets[0].id;
+    }
 
-  appState.sessionTargetsTemp = [];
-  $("roleSelfInput").value = "";
-  $("roleTargetInput").value = "";
-  $("roleTargetList").innerHTML = "";
+    appState.sessionTargetsTemp = [];
+    if(selfInput) selfInput.value = "";
+    if(roleTargetInput) roleTargetInput.value = "";
+    const list = $("roleTargetList");
+    if(list) list.innerHTML = "";
 
-  saveState();
-  renderObservationPage();
-  showPage("page-observation");
-};
+    saveState();
+    renderObservationPage();
+    showPage("page-observation");
+  };
+}
 
 // PAGE 5 : OBSERVATION
 
@@ -628,39 +646,45 @@ function renderObservationPage() {
   if (!appState.session) return;
 
   const session = appState.session;
-
-  $("sessionHeader").textContent =
-    session.mode === "observer"
-      ? `Je suis observateur — ${session.selfName}`
-      : `Je suis observé — ${session.selfName}`;
+  const header = $("sessionHeader");
+  if(header){
+    header.textContent =
+      session.mode === "observer"
+        ? `Je suis observateur — ${session.selfName}`
+        : `Je suis observé — ${session.selfName}`;
+  }
 
   renderTargetTabs();
   renderObservationArea();
 }
 
 // ajout de personne en cours de séance
-$("btnAddTarget").onclick = () => {
-  if (!appState.session) return;
-  const name = prompt("Nom de la personne :");
-  if (!name) return;
+const btnAddTarget = $("btnAddTarget");
+if(btnAddTarget){
+  btnAddTarget.onclick = () => {
+    if (!appState.session) return;
+    const name = prompt("Nom de la personne :");
+    if (!name) return;
 
-  const newTarget = {
-    id: uid(),
-    name,
-    items: makeEmptyItemsFromTemplate(),
-    comment: ""
+    const newTarget = {
+      id: uid(),
+      name,
+      items: makeEmptyItemsFromTemplate(),
+      comment: ""
+    };
+
+    appState.session.targets.push(newTarget);
+    appState.session.activeTargetId = newTarget.id;
+
+    saveState();
+    renderTargetTabs();
+    renderObservationArea();
   };
-
-  appState.session.targets.push(newTarget);
-  appState.session.activeTargetId = newTarget.id;
-
-  saveState();
-  renderTargetTabs();
-  renderObservationArea();
-};
+}
 
 function renderTargetTabs() {
   const container = $("targetTabs");
+  if(!container) return;
   container.innerHTML = "";
 
   if (!appState.session) return;
@@ -687,14 +711,12 @@ function renderTargetTabs() {
 function ensureItemColor(target, item){
   if(item.color) return item.color;
 
-  // essaie de récupérer depuis le template
   const tpl = (appState.observablesTemplate || []).find(o=>o.id === item.id);
   if(tpl && tpl.color){
     item.color = tpl.color;
     return item.color;
   }
 
-  // sinon on assigne en fonction de l'index
   const idx = target.items.indexOf(item);
   item.color = OBS_COLORS[idx % OBS_COLORS.length];
   return item.color;
@@ -702,6 +724,7 @@ function ensureItemColor(target, item){
 
 function renderObservationArea() {
   const container = $("observationArea");
+  if(!container) return;
   container.innerHTML = "";
 
   const target = getActiveTarget();
@@ -726,7 +749,7 @@ function renderObservationArea() {
   const body = document.createElement("div");
   body.className = "obs-body";
 
-  target.items.forEach((item, idx) => {
+  target.items.forEach((item) => {
     if(typeof item.plus !== "number") item.plus = 0;
     if(typeof item.minus !== "number") item.minus = 0;
     if(typeof item.useComment !== "boolean") item.useComment = true;
@@ -738,27 +761,21 @@ function renderObservationArea() {
 
     const row = document.createElement("div");
     row.className = "obs-row";
+    row.style.borderLeftColor = color;
 
     // Libellé observable centré + couleur
     const label = document.createElement("div");
     label.textContent = item.text;
     label.classList.add("centered");
-    label.style.borderLeft = `6px solid ${color}`;
-    label.style.paddingLeft = "6px";
+    label.style.paddingLeft = "4px";
     row.appendChild(label);
 
     // Options locales (compteur / niveau / commentaire)
     const optRow = document.createElement("div");
-    optRow.style.fontSize = "12px";
-    optRow.style.display = "flex";
-    optRow.style.flexWrap = "wrap";
-    optRow.style.gap = "8px";
+    optRow.className = "obs-live-options";
 
     const buildOpt = (prop, text)=>{
       const lab = document.createElement("label");
-      lab.style.display = "flex";
-      lab.style.alignItems = "center";
-      lab.style.gap = "4px";
 
       const chk = document.createElement("input");
       chk.type = "checkbox";
@@ -784,7 +801,6 @@ function renderObservationArea() {
     // Ligne de contrôles
     const controlsRow = document.createElement("div");
     controlsRow.className = "obs-controls-row";
-    controlsRow.style.justifyContent = "space-between";
 
     // Groupe compteur (un seul compteur + / -)
     if(item.usePlusMinus){
@@ -795,20 +811,16 @@ function renderObservationArea() {
       pmRow.className = "pm-row";
 
       const decBtn = document.createElement("button");
-      decBtn.className = "pm-btn";
+      decBtn.className = "pm-btn pm-minus";
       decBtn.textContent = "−";
-      decBtn.style.background = "var(--red)";
-      decBtn.style.color = "#fff";
 
       const countSpan = document.createElement("span");
       countSpan.className = "pm-count";
-      countSpan.textContent = item.plus; // on affiche uniquement le nombre de "+"
+      countSpan.textContent = item.plus; // affiche uniquement le nombre de "+"
 
       const incBtn = document.createElement("button");
-      incBtn.className = "pm-btn";
+      incBtn.className = "pm-btn pm-plus";
       incBtn.textContent = "+";
-      incBtn.style.background = "var(--green)";
-      incBtn.style.color = "#fff";
 
       decBtn.onclick = ()=>{
         if(item.plus > 0) item.plus--;
@@ -893,29 +905,39 @@ function renderObservationArea() {
 
 // NAVIGATION OBS / BILAN
 
-$("btnToBilan").onclick = () => {
-  renderBilanPage();
-  showPage("page-bilan");
-};
+const btnToBilan = $("btnToBilan");
+if(btnToBilan){
+  btnToBilan.onclick = () => {
+    renderBilanPage();
+    showPage("page-bilan");
+  };
+}
 
-$("btnBackToSession").onclick = () => {
-  showPage("page-observation");
-};
+const btnBackToSession = $("btnBackToSession");
+if(btnBackToSession){
+  btnBackToSession.onclick = () => {
+    showPage("page-observation");
+  };
+}
 
-$("btnEndSession").onclick = () => {
-  if (!confirm("Terminer la session ? Cela ne supprime rien mais ferme le mode.")) return;
+const btnEndSession = $("btnEndSession");
+if(btnEndSession){
+  btnEndSession.onclick = () => {
+    if (!confirm("Terminer la session ? Cela ne supprime rien mais ferme le mode.")) return;
 
-  appState.session = null;
-  saveState();
-  showPage("page-cover");
-};
+    appState.session = null;
+    saveState();
+    showPage("page-cover");
+  };
+}
 
 // =============================
-// Bloc 4/4 : Bilan + Export PDF
+// Bloc 4/4 : Bilan (HTML) + Export print.html
 // =============================
 
 function renderBilanPage() {
   const container = $("bilanContent");
+  if(!container) return;
   container.innerHTML = "";
 
   const session = appState.session;
@@ -1015,7 +1037,7 @@ function renderBilanPage() {
     container.appendChild(bloc);
   });
 
-  // Bouton reset (si présent dans le HTML)
+  // Bouton reset
   const resetBtn = $("btnResetAll");
   if (resetBtn) {
     resetBtn.onclick = () => {
@@ -1026,116 +1048,34 @@ function renderBilanPage() {
       );
       if (!ok) return;
       localStorage.removeItem(STORAGE_KEY);
-      // On recharge la page pour repartir propre
       window.location.reload();
     };
   }
 }
 
-// EXPORT PDF (avec pdfMake, style tableau)
+// EXPORT PDF → print.html
 
-$("btnExportPDF").onclick = () => {
-  if (!appState.session) {
-    alert("Aucune session active.");
-    return;
-  }
-
-  const session = appState.session;
-
-  const docContent = [];
-
-  docContent.push(
-    { text: "EPS OBSERVER", style: "header", alignment: "center" },
-    { text: "\n" },
-    {
-      text: session.mode === "observer"
-        ? `DOSSIER D’OBSERVATION – ${session.selfName}`
-        : `DOSSIER D’OBSERVATION – ${session.selfName}`,
-      style: "title",
-      alignment: "center"
-    },
-    { text: "\n" },
-    {
-      text: `APSA : ${session.apsa} — Niveau ${session.level}\nDate : ${new Date(session.dateIso).toLocaleString()}`,
-      style: "subheader",
-      margin: [0,0,0,10]
+const btnExportPDF = $("btnExportPDF");
+if(btnExportPDF){
+  btnExportPDF.onclick = () => {
+    if (!appState.session) {
+      alert("Aucune session active.");
+      return;
     }
-  );
-
-  session.targets.forEach(target => {
-    docContent.push(
-      {
-        text:
-          (session.mode === "observer"
-            ? `Jérôme est observateur de : ${target.name}`
-            : `${session.selfName} est observé par : ${target.name}`),
-        style: "sectionHeader",
-        margin: [0,10,0,4]
-      }
-    );
-
-    const body = [];
-    // en-tête du tableau
-    body.push([
-      { text: "Observable", style: "tableHeader" },
-      { text: "Niveau (1–4)", style: "tableHeader" },
-      { text: "Compteur (+)", style: "tableHeader" },
-      { text: "Commentaire", style: "tableHeader" }
-    ]);
-
-    target.items.forEach(item => {
-      const useLevels = (typeof item.useLevels === "boolean") ? item.useLevels : true;
-      const usePlusMinus = (typeof item.usePlusMinus === "boolean") ? item.usePlusMinus : true;
-      const useComment = (typeof item.useComment === "boolean") ? item.useComment : true;
-
-      body.push([
-        item.text || "",
-        useLevels && typeof item.level === "number" ? String(item.level) : "",
-        usePlusMinus ? String(item.plus || 0) : "",
-        useComment ? (item.note || "") : ""
-      ]);
-    });
-
-    docContent.push({
-      table: {
-        headerRows: 1,
-        widths: ["*", "auto", "auto", "*"],
-        body
-      },
-      layout: {
-        fillColor: function (rowIndex) {
-          return rowIndex === 0 ? "#eeeeee" : null;
-        }
-      }
-    });
-
-    if (target.comment) {
-      docContent.push({
-        text: `Commentaire global : ${target.comment}`,
-        italics: true,
-        margin: [0,4,0,0]
-      });
-    }
-  });
-
-  const styles = {
-    header: { fontSize: 24, bold: true },
-    title: { fontSize: 18, bold: true },
-    subheader: { fontSize: 12 },
-    sectionHeader: { fontSize: 14, bold: true },
-    tableHeader: { bold: true }
+    // on s'assure que tout est bien sauvegardé
+    saveState();
+    window.open("print.html", "_blank");
   };
-
-  pdfMake.createPdf({ content: docContent, styles }).download(
-    `${session.selfName}_${session.mode}_${session.apsa}.pdf`
-  );
-};
+}
 
 // =============================
 // Démarrage (page de garde)
 // =============================
 
-$("btnStart").onclick = () => {
-  showPage("page-activity");
-  initActivityPage();
-};
+const btnStart = $("btnStart");
+if(btnStart){
+  btnStart.onclick = () => {
+    showPage("page-activity");
+    initActivityPage();
+  };
+}
