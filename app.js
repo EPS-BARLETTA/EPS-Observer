@@ -1,10 +1,9 @@
 // =============================
 // EPS OBSERVER - APP.JS
-// Version finale — option A (réglages globaux) + per‑observable
+// Version finale - Option A (+/-, niveaux, commentaire par observable)
 // =============================
 
 // --- Constantes pédagogiques (CA, APSA, observables par défaut) ---
-
 const CHAMPS = [
   {
     id: "CA1",
@@ -81,27 +80,25 @@ const STORAGE_KEY = "eps_observer_v5_state";
 
 const appState = {
   // activité
-  selectedChampId: null,
-  selectedApsa: null,
-  selectedLevel: 2,
+  selectedChampId: null,   // "CA1"...
+  selectedApsa: null,      // "Basket-ball"...
+  selectedLevel: 2,        // 1..4
 
   // APSA personnalisées par CA
-  customApsaByChamp: {},
+  customApsaByChamp: {},   // { CA1:["..."], ... }
 
   // observables pour la session courante (modèle)
-  // [{id,text,usePlusMinus,useLevels,useFreeText}]
+  // chaque observable : {id,text,useComment,usePlusMinus,useLevels}
   observablesTemplate: [],
-
-  // réglages globaux d'affichage
-  usePlusMinusGlobal: true,
-  useLevelsGlobal: true,
-  useFreeTextGlobal: true,
 
   // rôle courant : "observer" ou "observed"
   currentRole: null,
 
-  // session en cours
-  session: null
+  // session en cours (voir structure plus bas)
+  session: null,
+
+  // tampon pour noms de personnes avant création de session
+  sessionTargetsTemp: []
 };
 
 // --- Helpers simples ---
@@ -161,58 +158,86 @@ function getAllApsaForChamp(champId){
 // Créer la liste d'observables à partir de l'APSA + niveau
 function buildObservablesTemplate(apsa, niveau){
   const base = DEFAULT_OBS[apsa] || ["Observable 1","Observable 2","Observable 3"];
+  // deviner le CA
   const champ = CHAMPS.find(c => c.baseAPSA.includes(apsa)) || CHAMPS[3]; // CA4 par défaut
   const hints = CA_LEVEL_HINTS[champ.id] || {};
   const hint = hints[niveau] || "";
   return base.map(txt => ({
     id: uid(),
     text: hint ? `${txt} — ${hint}` : txt,
-    usePlusMinus: appState.usePlusMinusGlobal,
-    useLevels: appState.useLevelsGlobal,
-    useFreeText: appState.useFreeTextGlobal
+    useComment: true,
+    usePlusMinus: false,
+    useLevels: true
   }));
 }
 
 // --- Session (structure) ---
+
 /*
- item = {
-   id: observableId,
-   text: "...",
-   plus: 0,
-   minus: 0,
-   level: null,   // 1..4 ou null
-   note: ""
+ session = {
+   id: "...",
+   mode: "observer" | "observed",
+   dateIso: "...",
+   champId: "CA4",
+   apsa: "Basket-ball",
+   level: 2,
+   selfName: "Jérôme",
+   targets: [
+     {
+       id: "...",
+       name: "Paul",        // si mode observer => personne observée
+                            // si mode observed => observateur
+       items: [
+         {
+           id: observableId,
+           text: "...",
+           plus: 0,
+           minus: 0,
+           level: null,      // 1..4 ou null
+           note: "",
+           useComment: true,
+           usePlusMinus: false,
+           useLevels: true
+         }, ...
+       ],
+       comment: ""
+     },
+     ...
+   ],
+   activeTargetId: "..."
  }
 */
 
+// Créer un "pack" d'items observables vierges pour un nouveau target
 function makeEmptyItemsFromTemplate(){
   return (appState.observablesTemplate || []).map(o => ({
     id: o.id,
     text: o.text,
     plus: 0,
     minus: 0,
-    level: null,
-    note: ""
+    level: null, // aucun niveau sélectionné au départ
+    note: "",
+    useComment: (typeof o.useComment === "boolean") ? o.useComment : true,
+    usePlusMinus: !!o.usePlusMinus,
+    useLevels: (typeof o.useLevels === "boolean") ? o.useLevels : true
   }));
 }
 
 function getActiveTarget(){
   if(!appState.session) return null;
-  return (appState.session.targets || []).find(t => t.id === appState.session.activeTargetId) || null;
+  return (appState.session.targets || []).find(
+    t => t.id === appState.session.activeTargetId
+  ) || null;
 }
 
-// Récupérer la config d'affichage d'un observable à partir de son id
-function getObservableConfig(obsId){
-  return (appState.observablesTemplate || []).find(o => o.id === obsId) || {
-    usePlusMinus: true,
-    useLevels: true,
-    useFreeText: true
-  };
-}
+// Charger l'état au démarrage
+loadState();
 
 // =============================
-// Bloc 2 : Page Activité & Observables
+// Bloc 2/4 : Page Activité & Observables
 // =============================
+
+// ---------- PAGE 2 : ACTIVITÉ ----------
 
 // --- Niveaux (4 ronds) ---
 function renderLevelButtons(){
@@ -287,101 +312,176 @@ function renderApsaList(){
   });
 }
 
-// --- Observables : affichage par bloc avec réglages ---
+// --- Ajouter une APSA ---
+$("addApsaBtn").onclick = ()=>{
+  const txt = $("addApsaInput").value.trim();
+  if(!txt || !appState.selectedChampId) return;
+
+  if(!appState.customApsaByChamp[appState.selectedChampId])
+    appState.customApsaByChamp[appState.selectedChampId] = [];
+
+  appState.customApsaByChamp[appState.selectedChampId].push(txt);
+  $("addApsaInput").value = "";
+  saveState();
+  renderApsaList();
+};
+
+// --- Aller aux observables ---
+$("btnToObservables").onclick = ()=>{
+  if(!appState.selectedChampId || !appState.selectedApsa){
+    alert("Sélectionnez un CA et une APSA.");
+    return;
+  }
+
+  // Construire la template d'observables (modifiable ensuite)
+  appState.observablesTemplate = buildObservablesTemplate(
+    appState.selectedApsa,
+    appState.selectedLevel
+  );
+
+  saveState();
+  renderObservableList();
+  $("obsApsaLabel").textContent =
+    `APSA : ${appState.selectedApsa} (Niveau ${appState.selectedLevel})`;
+  showPage("page-observables");
+};
+
+// Bouton retour vers la cover
+$("btnBackToCover").onclick = ()=>{
+  showPage("page-cover");
+};
+
+// ---------- PAGE 3 : OBSERVABLES ----------
 
 function renderObservableList(){
   const list = $("observableList");
+  if(!list) return;
   list.innerHTML = "";
 
   appState.observablesTemplate.forEach(obs=>{
-    const row = document.createElement("div");
-    row.className = "observable-item";
+    // valeurs par défaut si on charge un ancien état
+    if(typeof obs.useComment !== "boolean") obs.useComment = true;
+    if(typeof obs.usePlusMinus !== "boolean") obs.usePlusMinus = false;
+    if(typeof obs.useLevels !== "boolean") obs.useLevels = true;
 
+    const card = document.createElement("div");
+    card.className = "obs-config-card";
+
+    // header : texte observable + bouton supprimer
     const header = document.createElement("div");
-    header.className = "observable-header";
+    header.className = "obs-config-header";
 
-    const nameSpan = document.createElement("span");
-    nameSpan.className = "observable-name";
-    nameSpan.textContent = obs.text;
-    header.appendChild(nameSpan);
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = obs.text;
+    input.oninput = ()=>{
+      obs.text = input.value;
+      saveState();
+    };
 
-    const deleteBtn = document.createElement("button");
-    deleteBtn.className = "btn btn-red small";
-    deleteBtn.textContent = "X";
-    deleteBtn.onclick = ()=>{
+    const delBtn = document.createElement("button");
+    delBtn.className = "btn btn-red small";
+    delBtn.textContent = "Suppr.";
+    delBtn.onclick = ()=>{
       appState.observablesTemplate =
         appState.observablesTemplate.filter(o=>o.id !== obs.id);
       saveState();
       renderObservableList();
     };
-    header.appendChild(deleteBtn);
 
-    row.appendChild(header);
+    header.appendChild(input);
+    header.appendChild(delBtn);
+    card.appendChild(header);
 
-    const controls = document.createElement("div");
-    controls.className = "observable-controls";
+    // options : commentaire / +/- / niveaux
+    const opts = document.createElement("div");
+    opts.className = "obs-config-options";
 
-    const pmBtn = document.createElement("button");
-    pmBtn.className = "toggle-chip" + (obs.usePlusMinus ? " on" : "");
-    pmBtn.textContent = "+ / –";
-    pmBtn.onclick = ()=>{
-      obs.usePlusMinus = !obs.usePlusMinus;
+    const optComment = document.createElement("label");
+    const chkComment = document.createElement("input");
+    chkComment.type = "checkbox";
+    chkComment.checked = obs.useComment;
+    chkComment.onchange = ()=>{
+      obs.useComment = chkComment.checked;
       saveState();
-      renderObservableList();
     };
-    controls.appendChild(pmBtn);
+    optComment.appendChild(chkComment);
+    optComment.appendChild(document.createTextNode("Commentaire"));
 
-    const lvlBtn = document.createElement("button");
-    lvlBtn.className = "toggle-chip" + (obs.useLevels ? " on" : "");
-    lvlBtn.textContent = "Niveaux";
-    lvlBtn.onclick = ()=>{
-      obs.useLevels = !obs.useLevels;
+    const optPM = document.createElement("label");
+    const chkPM = document.createElement("input");
+    chkPM.type = "checkbox";
+    chkPM.checked = obs.usePlusMinus;
+    chkPM.onchange = ()=>{
+      obs.usePlusMinus = chkPM.checked;
       saveState();
-      renderObservableList();
     };
-    controls.appendChild(lvlBtn);
+    optPM.appendChild(chkPM);
+    optPM.appendChild(document.createTextNode("+ / -"));
 
-    const txtBtn = document.createElement("button");
-    txtBtn.className = "toggle-chip" + (obs.useFreeText ? " on" : "");
-    txtBtn.textContent = "Commentaire";
-    txtBtn.onclick = ()=>{
-      obs.useFreeText = !obs.useFreeText;
+    const optLevels = document.createElement("label");
+    const chkLv = document.createElement("input");
+    chkLv.type = "checkbox";
+    chkLv.checked = obs.useLevels;
+    chkLv.onchange = ()=>{
+      obs.useLevels = chkLv.checked;
       saveState();
-      renderObservableList();
     };
-    controls.appendChild(txtBtn);
+    optLevels.appendChild(chkLv);
+    optLevels.appendChild(document.createTextNode("Niveaux 1–4"));
 
-    row.appendChild(controls);
-    list.appendChild(row);
+    opts.appendChild(optComment);
+    opts.appendChild(optPM);
+    opts.appendChild(optLevels);
+
+    card.appendChild(opts);
+    list.appendChild(card);
   });
 }
 
-// --- Réglages globaux ---
+// Ajouter un observable
+$("addObservableBtn").onclick = ()=>{
+  const txt = $("addObservableInput").value.trim();
+  if(!txt) return;
 
-function refreshGlobalToggleButtons(){
-  const pm = $("togglePlusMinusGlobal");
-  const lvl = $("toggleLevelsGlobal");
-  const txt = $("toggleFreeTextGlobal");
-
-  if(pm){
-    pm.classList.toggle("on", !!appState.usePlusMinusGlobal);
-  }
-  if(lvl){
-    lvl.classList.toggle("on", !!appState.useLevelsGlobal);
-  }
-  if(txt){
-    txt.classList.toggle("on", !!appState.useFreeTextGlobal);
-  }
-}
-
-// Appliquer les réglages globaux aux observables existants
-function applyGlobalToAllObservables(){
-  (appState.observablesTemplate || []).forEach(o=>{
-    o.usePlusMinus = !!appState.usePlusMinusGlobal;
-    o.useLevels = !!appState.useLevelsGlobal;
-    o.useFreeText = !!appState.useFreeTextGlobal;
+  appState.observablesTemplate.push({
+    id: uid(),
+    text: txt,
+    useComment: true,
+    usePlusMinus: false,
+    useLevels: true
   });
-}
+
+  $("addObservableInput").value = "";
+  saveState();
+  renderObservableList();
+};
+
+// Appliquer options globales à tous les observables
+$("btnApplyGlobalOptions").onclick = ()=>{
+  const useComment = $("globalUseComment").checked;
+  const usePlusMinus = $("globalUsePlusMinus").checked;
+  const useLevels = $("globalUseLevels").checked;
+
+  appState.observablesTemplate = (appState.observablesTemplate || []).map(o=>({
+    ...o,
+    useComment,
+    usePlusMinus,
+    useLevels
+  }));
+  saveState();
+  renderObservableList();
+};
+
+// Page suivante → choix du rôle
+$("btnToRole").onclick = ()=>{
+  showPage("page-role");
+};
+
+// Retour activité depuis observables
+$("btnBackToActivity").onclick = ()=>{
+  showPage("page-activity");
+};
 
 // ---------- INITIALISATION PAGE ACTIVITÉ ----------
 
@@ -392,10 +492,23 @@ function initActivityPage(){
 }
 
 // =============================
-// Bloc 3 : Gestion du rôle + session + UI observation
+// Bloc 3/4 : Gestion du rôle + session + UI observation
 // =============================
 
+
 // ---------- PAGE 4 : CHOIX DU RÔLE ----------
+
+$("roleObserver").onclick = () => {
+  appState.currentRole = "observer";
+  saveState();
+  setupRoleForm();
+};
+
+$("roleObserved").onclick = () => {
+  appState.currentRole = "observed";
+  saveState();
+  setupRoleForm();
+};
 
 function setupRoleForm() {
   $("roleForm").classList.remove("hidden");
@@ -408,18 +521,30 @@ function setupRoleForm() {
     $("roleTargetLabel").textContent = "Je suis observé par :";
   }
 
+  // reset affichage liste
   renderRoleTargetList();
 }
 
+// bouton retour observables
+$("btnBackToObservables").onclick = ()=>{
+  showPage("page-observables");
+};
+
+// Ajouter un élève/observateur
+$("roleTargetInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    addRoleTarget();
+  }
+});
+
 function addRoleTarget() {
-  const input = $("roleTargetInput");
-  const txt = input.value.trim();
+  const txt = $("roleTargetInput").value.trim();
   if (!txt) return;
 
-  if (!appState.sessionTargetsTemp) appState.sessionTargetsTemp = [];
   appState.sessionTargetsTemp.push(txt);
 
-  input.value = "";
+  $("roleTargetInput").value = "";
   renderRoleTargetList();
 }
 
@@ -448,7 +573,7 @@ function renderRoleTargetList() {
 
 // ---------- CRÉATION DE LA SESSION ----------
 
-function startSession(){
+$("btnStartSession").onclick = () => {
   const selfName = $("roleSelfInput").value.trim();
   if (!selfName) {
     alert("Entrez votre prénom.");
@@ -461,6 +586,7 @@ function startSession(){
     return;
   }
 
+  // Création de la session
   appState.session = {
     id: uid(),
     mode: appState.currentRole, // observer | observed
@@ -473,6 +599,7 @@ function startSession(){
     activeTargetId: null
   };
 
+  // Transformer chaque nom en "target complet"
   targets.forEach(name => {
     appState.session.targets.push({
       id: uid(),
@@ -482,18 +609,22 @@ function startSession(){
     });
   });
 
+  // Activer le premier target
   if (appState.session.targets.length > 0) {
     appState.session.activeTargetId = appState.session.targets[0].id;
   }
 
+  // Nettoyage tampon
   appState.sessionTargetsTemp = [];
   $("roleSelfInput").value = "";
   $("roleTargetInput").value = "";
+  $("roleTargetList").innerHTML = "";
 
   saveState();
   renderObservationPage();
   showPage("page-observation");
-}
+};
+
 
 // ---------- PAGE 5 : OBSERVATION ----------
 
@@ -510,6 +641,28 @@ function renderObservationPage() {
   renderTargetTabs();
   renderObservationArea();
 }
+
+// Ajouter un nouveau target (élève observé ou observateur)
+$("btnAddTarget").onclick = () => {
+  if (!appState.session) return;
+  const name = prompt("Nom de la personne :");
+  if (!name) return;
+
+  const newTarget = {
+    id: uid(),
+    name,
+    items: makeEmptyItemsFromTemplate(),
+    comment: ""
+  };
+
+  appState.session.targets.push(newTarget);
+  // On bascule directement sur cette personne
+  appState.session.activeTargetId = newTarget.id;
+
+  saveState();
+  renderTargetTabs();
+  renderObservationArea();
+};
 
 function renderTargetTabs() {
   const container = $("targetTabs");
@@ -545,6 +698,7 @@ function renderObservationArea() {
 
   const session = appState.session;
 
+  // bloc items observables
   const card = document.createElement("div");
   card.className = "obs-card";
 
@@ -563,57 +717,76 @@ function renderObservationArea() {
   body.className = "obs-body";
 
   target.items.forEach(item => {
-    const cfg = getObservableConfig(item.id);
+    // valeurs par défaut si ancien état
+    if(typeof item.plus !== "number") item.plus = 0;
+    if(typeof item.minus !== "number") item.minus = 0;
+    if(typeof item.useComment !== "boolean") item.useComment = true;
+    if(typeof item.usePlusMinus !== "boolean") item.usePlusMinus = false;
+    if(typeof item.useLevels !== "boolean") item.useLevels = true;
+    if(typeof item.level !== "number") item.level = null;
+
     const row = document.createElement("div");
     row.className = "obs-row";
 
-    const title = document.createElement("div");
-    title.className = "obs-row-title";
-    title.textContent = item.text;
-    row.appendChild(title);
+    // Libellé observable
+    const label = document.createElement("div");
+    label.textContent = item.text;
+    row.appendChild(label);
 
-    const line = document.createElement("div");
-    line.className = "obs-row-line";
+    // Ligne de contrôles ( +/-, niveaux )
+    const controlsRow = document.createElement("div");
+    controlsRow.className = "obs-controls-row";
 
-    if(cfg.usePlusMinus){
-      const counter = document.createElement("div");
-      counter.className = "counter-wrapper";
+    // Groupe +/- si activé
+    if(item.usePlusMinus){
+      const pmGroup = document.createElement("div");
+      pmGroup.className = "pm-group";
 
-      const minusBtn = document.createElement("button");
-      minusBtn.className = "counter-button";
-      minusBtn.textContent = "−";
-      minusBtn.onclick = () => {
-        if(item.plus + item.minus > 0){
-          // on diminue d'abord un plus si possible, sinon un moins
-          if(item.plus > 0) item.plus -= 1;
-          else if(item.minus > 0) item.minus -= 1;
+      ["plus","minus"].forEach(key=>{
+        const pmRow = document.createElement("div");
+        pmRow.className = "pm-row";
+
+        const decBtn = document.createElement("button");
+        decBtn.className = "pm-btn";
+        decBtn.textContent = "-";
+        decBtn.onclick = ()=>{
+          if(item[key] > 0) item[key]--;
+          countSpan.textContent = item[key];
           saveState();
-          renderObservationArea();
-        }
-      };
+        };
 
-      const value = document.createElement("span");
-      value.className = "counter-value";
-      value.textContent = `${item.plus}/${item.minus}`;
+        const labelSpan = document.createElement("span");
+        labelSpan.className = "pm-label";
+        labelSpan.textContent = key === "plus" ? "+" : "−";
 
-      const plusBtn = document.createElement("button");
-      plusBtn.className = "counter-button";
-      plusBtn.textContent = "+";
-      plusBtn.onclick = () => {
-        item.plus += 1;
-        saveState();
-        renderObservationArea();
-      };
+        const countSpan = document.createElement("span");
+        countSpan.className = "pm-count";
+        countSpan.textContent = item[key];
 
-      counter.appendChild(minusBtn);
-      counter.appendChild(value);
-      counter.appendChild(plusBtn);
-      line.appendChild(counter);
+        const incBtn = document.createElement("button");
+        incBtn.className = "pm-btn";
+        incBtn.textContent = "+";
+        incBtn.onclick = ()=>{
+          item[key]++;
+          countSpan.textContent = item[key];
+          saveState();
+        };
+
+        pmRow.appendChild(decBtn);
+        pmRow.appendChild(labelSpan);
+        pmRow.appendChild(countSpan);
+        pmRow.appendChild(incBtn);
+        pmGroup.appendChild(pmRow);
+      });
+
+      controlsRow.appendChild(pmGroup);
     }
 
-    if(cfg.useLevels){
-      const lvlGroup = document.createElement("div");
-      lvlGroup.className = "level-inline";
+    // Niveaux (4 ronds) si activé
+    if(item.useLevels){
+      const levelGroup = document.createElement("div");
+      levelGroup.style.display = "flex";
+      levelGroup.style.gap = "4px";
 
       for (let lvl = 1; lvl <= 4; lvl++) {
         const circle = document.createElement("div");
@@ -624,22 +797,25 @@ function renderObservationArea() {
         if (item.level === lvl) circle.classList.add("active");
 
         circle.onclick = () => {
-          // si on reclique sur le même niveau, on enlève la sélection
-          item.level = (item.level === lvl) ? null : lvl;
+          item.level = lvl;
           saveState();
           renderObservationArea();
         };
 
-        lvlGroup.appendChild(circle);
+        levelGroup.appendChild(circle);
       }
 
-      line.appendChild(lvlGroup);
+      controlsRow.appendChild(levelGroup);
     }
 
-    row.appendChild(line);
+    if(controlsRow.childElementCount > 0){
+      row.appendChild(controlsRow);
+    }
 
-    if(cfg.useFreeText){
+    // zone commentaires individuels si activé
+    if(item.useComment){
       const noteInput = document.createElement("textarea");
+      noteInput.placeholder = "Note / commentaire pour cet observable";
       noteInput.value = item.note || "";
       noteInput.oninput = () => {
         item.note = noteInput.value;
@@ -651,34 +827,47 @@ function renderObservationArea() {
     body.appendChild(row);
   });
 
+  // Commentaire global pour le target
   const commentBlock = document.createElement("textarea");
-  commentBlock.placeholder = "Commentaire global";
-  commentBlock.value = target.comment || "";
+  commentBlock.placeholder = "Commentaire global pour " + target.name;
+  commentBlock.value = target.comment;
   commentBlock.oninput = () => {
     target.comment = commentBlock.value;
     saveState();
   };
+
   body.appendChild(commentBlock);
 
   card.appendChild(body);
   container.appendChild(card);
 }
 
-// ---------- BOUTONS DE NAVIGATION SESSION ----------
 
-function endSession(){
-  if (!confirm("Terminer la session ? Cela ne supprime rien mais ferme le mode."))
-    return;
+// ---------- BOUTONS DE NAVIGATION OBS / BILAN ----------
+
+$("btnToBilan").onclick = () => {
+  renderBilanPage();
+  showPage("page-bilan");
+};
+
+$("btnBackToSession").onclick = () => {
+  showPage("page-observation");
+};
+
+$("btnEndSession").onclick = () => {
+  if (!confirm("Terminer la session ? Cela ne supprime rien mais ferme le mode.")) return;
 
   appState.session = null;
   saveState();
   showPage("page-cover");
-}
+};
 
 // =============================
-// Bloc 4 : Bilan + Export PDF
+// Bloc 4/4 : Bilan + Export PDF
 // =============================
 
+
+// ---------- PAGE 6 : BILAN ----------
 function renderBilanPage() {
   const container = $("bilanContent");
   container.innerHTML = "";
@@ -686,82 +875,63 @@ function renderBilanPage() {
   const session = appState.session;
   if (!session) return;
 
+  // Titre
   const info = document.createElement("div");
   info.className = "bilan-block";
   info.innerHTML = `
     <h3>Informations séance</h3>
     <p><strong>Nom :</strong> ${session.selfName}</p>
-    <p><strong>Mode :</strong> ${session.mode === "observer" ? "Je suis observateur" : "Je suis observé"}</p>
+    <p><strong>Mode :</strong> ${
+      session.mode === "observer"
+        ? "Je suis observateur"
+        : "Je suis observé"
+    }</p>
     <p><strong>APSA :</strong> ${session.apsa} — Niveau ${session.level}</p>
     <p><strong>Date :</strong> ${new Date(session.dateIso).toLocaleString()}</p>
   `;
   container.appendChild(info);
 
+  // Liste des personnes observées / observateurs
   session.targets.forEach(target => {
     const bloc = document.createElement("div");
     bloc.className = "bilan-block";
 
-    const titre = session.mode === "observer"
-      ? `${session.selfName} observe ${target.name}`
-      : `${session.selfName} est observé par ${target.name}`;
+    bloc.innerHTML = `
+      <h3>${
+        session.mode === "observer"
+          ? "J’ai observé"
+          : "J’ai été observé par"
+      } : ${target.name}</h3>
+    `;
 
-    bloc.innerHTML = `<h3>${titre}</h3>`;
-
-    const table = document.createElement("table");
-    table.style.width = "100%";
-    table.style.borderCollapse = "collapse";
-    table.style.fontSize = "13px";
-
-    const thead = document.createElement("thead");
-    const hr = document.createElement("tr");
-
-    function addTh(text){
-      const th = document.createElement("th");
-      th.textContent = text;
-      th.style.borderBottom = "1px solid #e5e7eb";
-      th.style.padding = "4px";
-      th.style.textAlign = "left";
-      thead.appendChild(hr);
-      hr.appendChild(th);
-    }
-
-    addTh("Observable");
-    addTh("+ / –");
-    addTh("Niveau");
-    addTh("Commentaire");
-
-    table.appendChild(thead);
-
-    const tbody = document.createElement("tbody");
-
+    // Ajout des observables sous forme de liste
+    const ul = document.createElement("ul");
     target.items.forEach(item => {
-      const cfg = getObservableConfig(item.id);
-      const tr = document.createElement("tr");
+      const li = document.createElement("li");
 
-      function addTd(text){
-        const td = document.createElement("td");
-        td.textContent = text;
-        td.style.padding = "4px";
-        td.style.borderBottom = "1px solid #f3f4f6";
-        tr.appendChild(td);
+      const useLevels = (typeof item.useLevels === "boolean") ? item.useLevels : true;
+      const usePlusMinus = !!item.usePlusMinus;
+      const useComment = (typeof item.useComment === "boolean") ? item.useComment : true;
+
+      let html = `<strong>${item.text}</strong><br>`;
+
+      if(useLevels && typeof item.level === "number"){
+        html += `Niveau : ${item.level} / 4<br>`;
       }
 
-      addTd(item.text);
+      if(usePlusMinus && (item.plus || item.minus)){
+        html += `+ : ${item.plus || 0} / - : ${item.minus || 0}<br>`;
+      }
 
-      // +/-
-      addTd(cfg.usePlusMinus ? `${item.plus}/${item.minus}` : "");
+      if(useComment && item.note){
+        html += `Commentaire : ${item.note}<br>`;
+      }
 
-      // niveau
-      addTd(cfg.useLevels && item.level != null ? `${item.level}/4` : "");
-
-      // commentaire
-      addTd(cfg.useFreeText ? (item.note || "") : "");
-
-      tbody.appendChild(tr);
+      li.innerHTML = html;
+      ul.appendChild(li);
     });
 
-    table.appendChild(tbody);
-    bloc.appendChild(table);
+    bloc.appendChild(ul);
 
     if (target.comment) {
       const p = document.createElement("p");
@@ -773,9 +943,10 @@ function renderBilanPage() {
   });
 }
 
+
 // ---------- EXPORT PDF ----------
 
-function exportPDF(){
+$("btnExportPDF").onclick = () => {
   if (!appState.session) {
     alert("Aucune session active.");
     return;
@@ -783,295 +954,93 @@ function exportPDF(){
 
   const session = appState.session;
 
+  // Titre PDF
   const pdfContent = [
     { text: "EPS OBSERVER", style: "header", alignment: "center" },
-    { text: "\n" },
-    {
-      text: session.mode === "observer"
-        ? `COMPÉTENCE D’OBSERVATEUR — ${session.selfName}`
-        : `DOSSIER D’OBSERVATION — ${session.selfName}`,
-      style: "title",
-      alignment: "center"
-    },
-    { text: "\n" },
-    {
-      text: `APSA : ${session.apsa} — Niveau ${session.level}\nDate : ${new Date(session.dateIso).toLocaleString()}`,
-      style: "subheader"
-    },
-    { text: "\n\n" }
+    { text: "\n" }
   ];
 
-  session.targets.forEach(target => {
-    const titre = session.mode === "observer"
-      ? `${session.selfName} observe ${target.name}`
-      : `${session.selfName} est observé par ${target.name}`;
+  pdfContent.push({
+    text: session.mode === "observer"
+      ? `COMPÉTENCE D’OBSERVATEUR — ${session.selfName}`
+      : `DOSSIER D’OBSERVATION — ${session.selfName}`,
+    style: "title",
+    alignment: "center"
+  });
 
+  pdfContent.push({ text: "\n" });
+
+  pdfContent.push({
+    text: `APSA : ${session.apsa} — Niveau ${session.level}\nDate : ${new Date(session.dateIso).toLocaleString()}`,
+    style: "subheader"
+  });
+
+  pdfContent.push({ text: "\n\n" });
+
+  // SECTION pour chaque personne observée / observateur
+  session.targets.forEach(target => {
     pdfContent.push({
-      text: titre,
+      text:
+        (session.mode === "observer"
+          ? `J’ai observé : `
+          : `J’ai été observé par : `) + target.name,
       style: "sectionHeader"
     });
 
-    const tableBody = [
-      [
-        { text: "Observable", style: "tableHeader" },
-        { text: "+ / –", style: "tableHeader" },
-        { text: "Niveau (1-4)", style: "tableHeader" },
-        { text: "Commentaire", style: "tableHeader" }
-      ]
-    ];
-
+    // Observables sous forme de blocs texte
     target.items.forEach(item => {
-      const cfg = getObservableConfig(item.id);
-      tableBody.push([
-        item.text,
-        cfg.usePlusMinus ? `${item.plus}/${item.minus}` : "",
-        cfg.useLevels && item.level != null ? item.level.toString() : "",
-        cfg.useFreeText ? (item.note || "") : ""
-      ]);
-    });
+      const useLevels = (typeof item.useLevels === "boolean") ? item.useLevels : true;
+      const usePlusMinus = !!item.usePlusMinus;
+      const useComment = (typeof item.useComment === "boolean") ? item.useComment : true;
 
-    pdfContent.push({
-      style: "table",
-      table: {
-        widths: ["*", 50, 60, "*"],
-        body: tableBody
+      const lines = [];
+      lines.push(item.text);
+
+      if(useLevels && typeof item.level === "number"){
+        lines.push(`Niveau : ${item.level} / 4`);
       }
+      if(usePlusMinus && (item.plus || item.minus)){
+        lines.push(`+ : ${item.plus || 0} / - : ${item.minus || 0}`);
+      }
+      if(useComment && item.note){
+        lines.push(`Commentaire : ${item.note}`);
+      }
+
+      pdfContent.push({
+        text: lines.join("\n"),
+        margin: [0, 0, 0, 8]
+      });
     });
 
     if (target.comment) {
       pdfContent.push({
-        text: `\nCommentaire global : ${target.comment}`,
-        italics: true
+        text: `Commentaire global : ${target.comment}`,
+        italics: true,
+        margin: [0, 4, 0, 10]
       });
     }
 
-    pdfContent.push({ text: "\n\n" });
+    pdfContent.push({ text: "\n" });
   });
 
+  // Styles PDF
   const styles = {
     header: { fontSize: 24, bold: true },
     title: { fontSize: 18, bold: true },
-    subheader: { fontSize: 12 },
-    sectionHeader: { fontSize: 14, bold: true, margin: [0, 10, 0, 5] },
-    tableHeader: { bold: true, fillColor: "#eeeeee" },
-    table: { margin: [0, 5, 0, 15] }
+    subheader: { fontSize: 12, bold: false },
+    sectionHeader: { fontSize: 14, bold: true, margin: [0, 10, 0, 5] }
   };
 
   pdfMake.createPdf({ content: pdfContent, styles }).download(
     `${session.selfName}_${session.mode}_${session.apsa}.pdf`
   );
-}
+};
 
 // =============================
-// Initialisation globale & écouteurs
+// Démarrage (page de garde)
 // =============================
 
-function attachEventHandlers(){
-  // cover
-  $("btnStart").onclick = () => {
-    showPage("page-activity");
-    initActivityPage();
-  };
-
-  // navigation simples
-  const backToCover = $("backToCover");
-  if(backToCover){
-    backToCover.onclick = () => showPage("page-cover");
-  }
-  const backToActivity = $("backToActivity");
-  if(backToActivity){
-    backToActivity.onclick = () => showPage("page-activity");
-  }
-  const backToObservables = $("backToObservables");
-  if(backToObservables){
-    backToObservables.onclick = () => showPage("page-observables");
-  }
-  const backToRole = $("backToRole");
-  if(backToRole){
-    backToRole.onclick = () => showPage("page-role");
-  }
-  const backToSession = $("backToSession");
-  if(backToSession){
-    backToSession.onclick = () => showPage("page-observation");
-  }
-
-  // activité
-  const addApsaBtn = $("addApsaBtn");
-  if(addApsaBtn){
-    addApsaBtn.onclick = ()=>{
-      const txt = $("addApsaInput").value.trim();
-      if(!txt || !appState.selectedChampId) return;
-
-      if(!appState.customApsaByChamp[appState.selectedChampId])
-        appState.customApsaByChamp[appState.selectedChampId] = [];
-
-      appState.customApsaByChamp[appState.selectedChampId].push(txt);
-      $("addApsaInput").value = "";
-      saveState();
-      renderApsaList();
-    };
-  }
-
-  const btnToObservables = $("btnToObservables");
-  if(btnToObservables){
-    btnToObservables.onclick = ()=>{
-      if(!appState.selectedChampId || !appState.selectedApsa){
-        alert("Sélectionnez un CA et une APSA.");
-        return;
-      }
-      appState.observablesTemplate = buildObservablesTemplate(
-        appState.selectedApsa,
-        appState.selectedLevel
-      );
-      saveState();
-      $("obsApsaLabel").textContent =
-        `APSA : ${appState.selectedApsa} (Niveau ${appState.selectedLevel})`;
-      refreshGlobalToggleButtons();
-      renderObservableList();
-      showPage("page-observables");
-    };
-  }
-
-  // réglages globaux observables
-  const tPM = $("togglePlusMinusGlobal");
-  if(tPM){
-    tPM.onclick = () => {
-      appState.usePlusMinusGlobal = !appState.usePlusMinusGlobal;
-      saveState();
-      refreshGlobalToggleButtons();
-    };
-  }
-  const tLvl = $("toggleLevelsGlobal");
-  if(tLvl){
-    tLvl.onclick = () => {
-      appState.useLevelsGlobal = !appState.useLevelsGlobal;
-      saveState();
-      refreshGlobalToggleButtons();
-    };
-  }
-  const tTxt = $("toggleFreeTextGlobal");
-  if(tTxt){
-    tTxt.onclick = () => {
-      appState.useFreeTextGlobal = !appState.useFreeTextGlobal;
-      saveState();
-      refreshGlobalToggleButtons();
-    };
-  }
-
-  const applyAll = $("applyGlobalToAll");
-  if(applyAll){
-    applyAll.onclick = () => {
-      applyGlobalToAllObservables();
-      saveState();
-      renderObservableList();
-    };
-  }
-
-  const addObservableBtn = $("addObservableBtn");
-  if(addObservableBtn){
-    addObservableBtn.onclick = ()=>{
-      const txt = $("addObservableInput").value.trim();
-      if(!txt) return;
-
-      appState.observablesTemplate.push({
-        id: uid(),
-        text: txt,
-        usePlusMinus: appState.usePlusMinusGlobal,
-        useLevels: appState.useLevelsGlobal,
-        useFreeText: appState.useFreeTextGlobal
-      });
-
-      $("addObservableInput").value = "";
-      saveState();
-      renderObservableList();
-    };
-  }
-
-  const btnToRole = $("btnToRole");
-  if(btnToRole){
-    btnToRole.onclick = ()=>{
-      showPage("page-role");
-    };
-  }
-
-  // rôle
-  const roleObserver = $("roleObserver");
-  if(roleObserver){
-    roleObserver.onclick = () => {
-      appState.currentRole = "observer";
-      saveState();
-      setupRoleForm();
-    };
-  }
-  const roleObserved = $("roleObserved");
-  if(roleObserved){
-    roleObserved.onclick = () => {
-      appState.currentRole = "observed";
-      saveState();
-      setupRoleForm();
-    };
-  }
-
-  const roleTargetInput = $("roleTargetInput");
-  if(roleTargetInput){
-    roleTargetInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        addRoleTarget();
-      }
-    });
-  }
-
-  const btnStartSession = $("btnStartSession");
-  if(btnStartSession){
-    btnStartSession.onclick = () => startSession();
-  }
-
-  // observation
-  const btnAddTarget = $("btnAddTarget");
-  if(btnAddTarget){
-    btnAddTarget.onclick = () => {
-      if(!appState.session){
-        alert("Commencez d'abord une session.");
-        return;
-      }
-      const name = prompt("Nom de la personne :");
-      if (!name) return;
-
-      const newTarget = {
-        id: uid(),
-        name,
-        items: makeEmptyItemsFromTemplate(),
-        comment: ""
-      };
-      appState.session.targets.push(newTarget);
-      appState.session.activeTargetId = newTarget.id;
-      saveState();
-      renderTargetTabs();
-      renderObservationArea();
-    };
-  }
-
-  const btnToBilan = $("btnToBilan");
-  if(btnToBilan){
-    btnToBilan.onclick = () => {
-      renderBilanPage();
-      showPage("page-bilan");
-    };
-  }
-
-  const btnEndSession = $("btnEndSession");
-  if(btnEndSession){
-    btnEndSession.onclick = () => endSession();
-  }
-
-  const btnExportPDF = $("btnExportPDF");
-  if(btnExportPDF){
-    btnExportPDF.onclick = () => exportPDF();
-  }
-}
-
-// Au chargement du script
-loadState();
-attachEventHandlers();
-// On reste sur la page cover, déjà visible dans le HTML
+$("btnStart").onclick = () => {
+  showPage("page-activity");
+  initActivityPage();
+};
