@@ -1,6 +1,6 @@
 // =============================
 // EPS OBSERVER - APP.JS
-// Version finale - Option A (+/-, niveaux, commentaire par observable)
+// Version avec couleurs, options in situ, bilan + PDF tableau
 // =============================
 
 // --- Constantes pédagogiques (CA, APSA, observables par défaut) ---
@@ -74,30 +74,33 @@ const CA_LEVEL_HINTS = {
   CA5:{1:"Entrer dans l’effort",2:"Régularité & contrôle",3:"Planification / auto-régulation",4:"Optimisation santé / perf"}
 };
 
+// Palette de couleurs pour différencier les observables
+const OBS_COLORS = [
+  "#ef4444", "#f97316", "#eab308", "#22c55e",
+  "#10b981", "#06b6d4", "#3b82f6", "#6366f1",
+  "#8b5cf6", "#ec4899", "#f97373"
+];
+
 // --- État global de l'application ---
 
 const STORAGE_KEY = "eps_observer_v5_state";
 
 const appState = {
   // activité
-  selectedChampId: null,   // "CA1"...
-  selectedApsa: null,      // "Basket-ball"...
-  selectedLevel: 2,        // 1..4
+  selectedChampId: null,
+  selectedApsa: null,
+  selectedLevel: 2,
 
-  // APSA personnalisées par CA
-  customApsaByChamp: {},   // { CA1:["..."], ... }
+  customApsaByChamp: {},
 
-  // observables pour la session courante (modèle)
-  // chaque observable : {id,text,useComment,usePlusMinus,useLevels}
+  // observables pour la session (modèle)
+  // chaque observable : {id,text,useComment,usePlusMinus,useLevels,color}
   observablesTemplate: [],
 
-  // rôle courant : "observer" ou "observed"
   currentRole: null,
 
-  // session en cours (voir structure plus bas)
   session: null,
 
-  // tampon pour noms de personnes avant création de session
   sessionTargetsTemp: []
 };
 
@@ -158,21 +161,21 @@ function getAllApsaForChamp(champId){
 // Créer la liste d'observables à partir de l'APSA + niveau
 function buildObservablesTemplate(apsa, niveau){
   const base = DEFAULT_OBS[apsa] || ["Observable 1","Observable 2","Observable 3"];
-  // deviner le CA
   const champ = CHAMPS.find(c => c.baseAPSA.includes(apsa)) || CHAMPS[3]; // CA4 par défaut
   const hints = CA_LEVEL_HINTS[champ.id] || {};
   const hint = hints[niveau] || "";
-  return base.map(txt => ({
+
+  return base.map((txt, index) => ({
     id: uid(),
     text: hint ? `${txt} — ${hint}` : txt,
     useComment: true,
-    usePlusMinus: false,
-    useLevels: true
+    usePlusMinus: true,    // ✅ tous activés par défaut
+    useLevels: true,
+    color: OBS_COLORS[index % OBS_COLORS.length]
   }));
 }
 
 // --- Session (structure) ---
-
 /*
  session = {
    id: "...",
@@ -185,41 +188,40 @@ function buildObservablesTemplate(apsa, niveau){
    targets: [
      {
        id: "...",
-       name: "Paul",        // si mode observer => personne observée
-                            // si mode observed => observateur
+       name: "Paul",
        items: [
          {
            id: observableId,
            text: "...",
-           plus: 0,
-           minus: 0,
-           level: null,      // 1..4 ou null
+           plus: 0,         // compteur net
+           minus: 0,        // plus utilisé pour l'affichage
+           level: null,
            note: "",
            useComment: true,
-           usePlusMinus: false,
-           useLevels: true
+           usePlusMinus: true,
+           useLevels: true,
+           color: "#ef4444"
          }, ...
        ],
        comment: ""
-     },
-     ...
+     }
    ],
    activeTargetId: "..."
  }
 */
 
-// Créer un "pack" d'items observables vierges pour un nouveau target
 function makeEmptyItemsFromTemplate(){
   return (appState.observablesTemplate || []).map(o => ({
     id: o.id,
     text: o.text,
     plus: 0,
     minus: 0,
-    level: null, // aucun niveau sélectionné au départ
+    level: null,
     note: "",
     useComment: (typeof o.useComment === "boolean") ? o.useComment : true,
-    usePlusMinus: !!o.usePlusMinus,
-    useLevels: (typeof o.useLevels === "boolean") ? o.useLevels : true
+    usePlusMinus: (typeof o.usePlusMinus === "boolean") ? o.usePlusMinus : true,
+    useLevels: (typeof o.useLevels === "boolean") ? o.useLevels : true,
+    color: o.color || null
   }));
 }
 
@@ -239,7 +241,6 @@ loadState();
 
 // ---------- PAGE 2 : ACTIVITÉ ----------
 
-// --- Niveaux (4 ronds) ---
 function renderLevelButtons(){
   const container = $("levelButtons");
   container.innerHTML = "";
@@ -261,7 +262,6 @@ function renderLevelButtons(){
   }
 }
 
-// --- Champs (CA1 → CA5) ---
 function renderChampList(){
   const container = $("champList");
   container.innerHTML = "";
@@ -285,7 +285,6 @@ function renderChampList(){
   });
 }
 
-// --- APSA ---
 function renderApsaList(){
   const container = $("apsaList");
   container.innerHTML = "";
@@ -312,7 +311,7 @@ function renderApsaList(){
   });
 }
 
-// --- Ajouter une APSA ---
+// Ajouter une APSA
 $("addApsaBtn").onclick = ()=>{
   const txt = $("addApsaInput").value.trim();
   if(!txt || !appState.selectedChampId) return;
@@ -326,14 +325,13 @@ $("addApsaBtn").onclick = ()=>{
   renderApsaList();
 };
 
-// --- Aller aux observables ---
+// Aller aux observables
 $("btnToObservables").onclick = ()=>{
   if(!appState.selectedChampId || !appState.selectedApsa){
     alert("Sélectionnez un CA et une APSA.");
     return;
   }
 
-  // Construire la template d'observables (modifiable ensuite)
   appState.observablesTemplate = buildObservablesTemplate(
     appState.selectedApsa,
     appState.selectedLevel
@@ -346,7 +344,7 @@ $("btnToObservables").onclick = ()=>{
   showPage("page-observables");
 };
 
-// Bouton retour vers la cover
+// Retour couverture
 $("btnBackToCover").onclick = ()=>{
   showPage("page-cover");
 };
@@ -358,16 +356,18 @@ function renderObservableList(){
   if(!list) return;
   list.innerHTML = "";
 
-  appState.observablesTemplate.forEach(obs=>{
-    // valeurs par défaut si on charge un ancien état
+  appState.observablesTemplate.forEach((obs, index)=>{
     if(typeof obs.useComment !== "boolean") obs.useComment = true;
-    if(typeof obs.usePlusMinus !== "boolean") obs.usePlusMinus = false;
+    if(typeof obs.usePlusMinus !== "boolean") obs.usePlusMinus = true;
     if(typeof obs.useLevels !== "boolean") obs.useLevels = true;
+    if(!obs.color){
+      obs.color = OBS_COLORS[index % OBS_COLORS.length];
+    }
 
     const card = document.createElement("div");
     card.className = "obs-config-card";
+    card.style.borderLeft = `6px solid ${obs.color}`;
 
-    // header : texte observable + bouton supprimer
     const header = document.createElement("div");
     header.className = "obs-config-header";
 
@@ -393,7 +393,6 @@ function renderObservableList(){
     header.appendChild(delBtn);
     card.appendChild(header);
 
-    // options : commentaire / +/- / niveaux
     const opts = document.createElement("div");
     opts.className = "obs-config-options";
 
@@ -417,7 +416,7 @@ function renderObservableList(){
       saveState();
     };
     optPM.appendChild(chkPM);
-    optPM.appendChild(document.createTextNode("+ / -"));
+    optPM.appendChild(document.createTextNode("Compteur +/-"));
 
     const optLevels = document.createElement("label");
     const chkLv = document.createElement("input");
@@ -444,12 +443,14 @@ $("addObservableBtn").onclick = ()=>{
   const txt = $("addObservableInput").value.trim();
   if(!txt) return;
 
+  const index = appState.observablesTemplate.length;
   appState.observablesTemplate.push({
     id: uid(),
     text: txt,
     useComment: true,
-    usePlusMinus: false,
-    useLevels: true
+    usePlusMinus: true,
+    useLevels: true,
+    color: OBS_COLORS[index % OBS_COLORS.length]
   });
 
   $("addObservableInput").value = "";
@@ -457,7 +458,7 @@ $("addObservableBtn").onclick = ()=>{
   renderObservableList();
 };
 
-// Appliquer options globales à tous les observables
+// Options globales
 $("btnApplyGlobalOptions").onclick = ()=>{
   const useComment = $("globalUseComment").checked;
   const usePlusMinus = $("globalUsePlusMinus").checked;
@@ -473,30 +474,31 @@ $("btnApplyGlobalOptions").onclick = ()=>{
   renderObservableList();
 };
 
-// Page suivante → choix du rôle
+// Page suivante → rôle
 $("btnToRole").onclick = ()=>{
   showPage("page-role");
 };
 
-// Retour activité depuis observables
+// Retour activité
 $("btnBackToActivity").onclick = ()=>{
   showPage("page-activity");
 };
-
-// ---------- INITIALISATION PAGE ACTIVITÉ ----------
 
 function initActivityPage(){
   renderLevelButtons();
   renderChampList();
   renderApsaList();
+
+  // Met le global compteur coché par défaut
+  const gpm = $("globalUsePlusMinus");
+  if (gpm) gpm.checked = true;
 }
 
 // =============================
 // Bloc 3/4 : Gestion du rôle + session + UI observation
 // =============================
 
-
-// ---------- PAGE 4 : CHOIX DU RÔLE ----------
+// PAGE 4 : CHOIX DU RÔLE
 
 $("roleObserver").onclick = () => {
   appState.currentRole = "observer";
@@ -521,16 +523,15 @@ function setupRoleForm() {
     $("roleTargetLabel").textContent = "Je suis observé par :";
   }
 
-  // reset affichage liste
   renderRoleTargetList();
 }
 
-// bouton retour observables
+// Retour observables
 $("btnBackToObservables").onclick = ()=>{
   showPage("page-observables");
 };
 
-// Ajouter un élève/observateur
+// Ajout de cibles
 $("roleTargetInput").addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     e.preventDefault();
@@ -571,7 +572,7 @@ function renderRoleTargetList() {
   });
 }
 
-// ---------- CRÉATION DE LA SESSION ----------
+// CRÉATION SESSION
 
 $("btnStartSession").onclick = () => {
   const selfName = $("roleSelfInput").value.trim();
@@ -586,10 +587,9 @@ $("btnStartSession").onclick = () => {
     return;
   }
 
-  // Création de la session
   appState.session = {
     id: uid(),
-    mode: appState.currentRole, // observer | observed
+    mode: appState.currentRole,
     dateIso: new Date().toISOString(),
     champId: appState.selectedChampId,
     apsa: appState.selectedApsa,
@@ -599,7 +599,6 @@ $("btnStartSession").onclick = () => {
     activeTargetId: null
   };
 
-  // Transformer chaque nom en "target complet"
   targets.forEach(name => {
     appState.session.targets.push({
       id: uid(),
@@ -609,12 +608,10 @@ $("btnStartSession").onclick = () => {
     });
   });
 
-  // Activer le premier target
   if (appState.session.targets.length > 0) {
     appState.session.activeTargetId = appState.session.targets[0].id;
   }
 
-  // Nettoyage tampon
   appState.sessionTargetsTemp = [];
   $("roleSelfInput").value = "";
   $("roleTargetInput").value = "";
@@ -625,8 +622,7 @@ $("btnStartSession").onclick = () => {
   showPage("page-observation");
 };
 
-
-// ---------- PAGE 5 : OBSERVATION ----------
+// PAGE 5 : OBSERVATION
 
 function renderObservationPage() {
   if (!appState.session) return;
@@ -642,7 +638,7 @@ function renderObservationPage() {
   renderObservationArea();
 }
 
-// Ajouter un nouveau target (élève observé ou observateur)
+// ajout de personne en cours de séance
 $("btnAddTarget").onclick = () => {
   if (!appState.session) return;
   const name = prompt("Nom de la personne :");
@@ -656,7 +652,6 @@ $("btnAddTarget").onclick = () => {
   };
 
   appState.session.targets.push(newTarget);
-  // On bascule directement sur cette personne
   appState.session.activeTargetId = newTarget.id;
 
   saveState();
@@ -689,6 +684,22 @@ function renderTargetTabs() {
   });
 }
 
+function ensureItemColor(target, item){
+  if(item.color) return item.color;
+
+  // essaie de récupérer depuis le template
+  const tpl = (appState.observablesTemplate || []).find(o=>o.id === item.id);
+  if(tpl && tpl.color){
+    item.color = tpl.color;
+    return item.color;
+  }
+
+  // sinon on assigne en fonction de l'index
+  const idx = target.items.indexOf(item);
+  item.color = OBS_COLORS[idx % OBS_COLORS.length];
+  return item.color;
+}
+
 function renderObservationArea() {
   const container = $("observationArea");
   container.innerHTML = "";
@@ -698,7 +709,6 @@ function renderObservationArea() {
 
   const session = appState.session;
 
-  // bloc items observables
   const card = document.createElement("div");
   card.className = "obs-card";
 
@@ -716,77 +726,116 @@ function renderObservationArea() {
   const body = document.createElement("div");
   body.className = "obs-body";
 
-  target.items.forEach(item => {
-    // valeurs par défaut si ancien état
+  target.items.forEach((item, idx) => {
     if(typeof item.plus !== "number") item.plus = 0;
     if(typeof item.minus !== "number") item.minus = 0;
     if(typeof item.useComment !== "boolean") item.useComment = true;
-    if(typeof item.usePlusMinus !== "boolean") item.usePlusMinus = false;
+    if(typeof item.usePlusMinus !== "boolean") item.usePlusMinus = true;
     if(typeof item.useLevels !== "boolean") item.useLevels = true;
     if(typeof item.level !== "number") item.level = null;
+
+    const color = ensureItemColor(target, item);
 
     const row = document.createElement("div");
     row.className = "obs-row";
 
-    // Libellé observable
+    // Libellé observable centré + couleur
     const label = document.createElement("div");
     label.textContent = item.text;
+    label.classList.add("centered");
+    label.style.borderLeft = `6px solid ${color}`;
+    label.style.paddingLeft = "6px";
     row.appendChild(label);
 
-    // Ligne de contrôles ( +/-, niveaux )
+    // Options locales (compteur / niveau / commentaire)
+    const optRow = document.createElement("div");
+    optRow.style.fontSize = "12px";
+    optRow.style.display = "flex";
+    optRow.style.flexWrap = "wrap";
+    optRow.style.gap = "8px";
+
+    const buildOpt = (prop, text)=>{
+      const lab = document.createElement("label");
+      lab.style.display = "flex";
+      lab.style.alignItems = "center";
+      lab.style.gap = "4px";
+
+      const chk = document.createElement("input");
+      chk.type = "checkbox";
+      chk.checked = item[prop];
+
+      chk.onchange = ()=>{
+        item[prop] = chk.checked;
+        saveState();
+        renderObservationArea();
+      };
+
+      lab.appendChild(chk);
+      lab.appendChild(document.createTextNode(text));
+      return lab;
+    };
+
+    optRow.appendChild(buildOpt("usePlusMinus", "Compteur"));
+    optRow.appendChild(buildOpt("useLevels", "Niveaux"));
+    optRow.appendChild(buildOpt("useComment", "Commentaire"));
+
+    row.appendChild(optRow);
+
+    // Ligne de contrôles
     const controlsRow = document.createElement("div");
     controlsRow.className = "obs-controls-row";
+    controlsRow.style.justifyContent = "space-between";
 
-    // Groupe +/- si activé
+    // Groupe compteur (un seul compteur + / -)
     if(item.usePlusMinus){
       const pmGroup = document.createElement("div");
       pmGroup.className = "pm-group";
 
-      ["plus","minus"].forEach(key=>{
-        const pmRow = document.createElement("div");
-        pmRow.className = "pm-row";
+      const pmRow = document.createElement("div");
+      pmRow.className = "pm-row";
 
-        const decBtn = document.createElement("button");
-        decBtn.className = "pm-btn";
-        decBtn.textContent = "-";
-        decBtn.onclick = ()=>{
-          if(item[key] > 0) item[key]--;
-          countSpan.textContent = item[key];
-          saveState();
-        };
+      const decBtn = document.createElement("button");
+      decBtn.className = "pm-btn";
+      decBtn.textContent = "−";
+      decBtn.style.background = "var(--red)";
+      decBtn.style.color = "#fff";
 
-        const labelSpan = document.createElement("span");
-        labelSpan.className = "pm-label";
-        labelSpan.textContent = key === "plus" ? "+" : "−";
+      const countSpan = document.createElement("span");
+      countSpan.className = "pm-count";
+      countSpan.textContent = item.plus; // on affiche uniquement le nombre de "+"
 
-        const countSpan = document.createElement("span");
-        countSpan.className = "pm-count";
-        countSpan.textContent = item[key];
+      const incBtn = document.createElement("button");
+      incBtn.className = "pm-btn";
+      incBtn.textContent = "+";
+      incBtn.style.background = "var(--green)";
+      incBtn.style.color = "#fff";
 
-        const incBtn = document.createElement("button");
-        incBtn.className = "pm-btn";
-        incBtn.textContent = "+";
-        incBtn.onclick = ()=>{
-          item[key]++;
-          countSpan.textContent = item[key];
-          saveState();
-        };
+      decBtn.onclick = ()=>{
+        if(item.plus > 0) item.plus--;
+        countSpan.textContent = item.plus;
+        saveState();
+      };
 
-        pmRow.appendChild(decBtn);
-        pmRow.appendChild(labelSpan);
-        pmRow.appendChild(countSpan);
-        pmRow.appendChild(incBtn);
-        pmGroup.appendChild(pmRow);
-      });
+      incBtn.onclick = ()=>{
+        item.plus++;
+        countSpan.textContent = item.plus;
+        saveState();
+      };
 
+      pmRow.appendChild(decBtn);
+      pmRow.appendChild(countSpan);
+      pmRow.appendChild(incBtn);
+
+      pmGroup.appendChild(pmRow);
       controlsRow.appendChild(pmGroup);
     }
 
-    // Niveaux (4 ronds) si activé
+    // Niveaux 1-4 à droite
     if(item.useLevels){
       const levelGroup = document.createElement("div");
       levelGroup.style.display = "flex";
       levelGroup.style.gap = "4px";
+      levelGroup.style.marginLeft = "auto";
 
       for (let lvl = 1; lvl <= 4; lvl++) {
         const circle = document.createElement("div");
@@ -812,7 +861,7 @@ function renderObservationArea() {
       row.appendChild(controlsRow);
     }
 
-    // zone commentaires individuels si activé
+    // Commentaire individuel
     if(item.useComment){
       const noteInput = document.createElement("textarea");
       noteInput.placeholder = "Note / commentaire pour cet observable";
@@ -827,7 +876,7 @@ function renderObservationArea() {
     body.appendChild(row);
   });
 
-  // Commentaire global pour le target
+  // Commentaire global pour la personne
   const commentBlock = document.createElement("textarea");
   commentBlock.placeholder = "Commentaire global pour " + target.name;
   commentBlock.value = target.comment;
@@ -842,8 +891,7 @@ function renderObservationArea() {
   container.appendChild(card);
 }
 
-
-// ---------- BOUTONS DE NAVIGATION OBS / BILAN ----------
+// NAVIGATION OBS / BILAN
 
 $("btnToBilan").onclick = () => {
   renderBilanPage();
@@ -866,8 +914,6 @@ $("btnEndSession").onclick = () => {
 // Bloc 4/4 : Bilan + Export PDF
 // =============================
 
-
-// ---------- PAGE 6 : BILAN ----------
 function renderBilanPage() {
   const container = $("bilanContent");
   container.innerHTML = "";
@@ -875,7 +921,6 @@ function renderBilanPage() {
   const session = appState.session;
   if (!session) return;
 
-  // Titre
   const info = document.createElement("div");
   info.className = "bilan-block";
   info.innerHTML = `
@@ -891,7 +936,6 @@ function renderBilanPage() {
   `;
   container.appendChild(info);
 
-  // Liste des personnes observées / observateurs
   session.targets.forEach(target => {
     const bloc = document.createElement("div");
     bloc.className = "bilan-block";
@@ -904,34 +948,63 @@ function renderBilanPage() {
       } : ${target.name}</h3>
     `;
 
-    // Ajout des observables sous forme de liste
-    const ul = document.createElement("ul");
-    target.items.forEach(item => {
-      const li = document.createElement("li");
+    const table = document.createElement("table");
+    table.style.width = "100%";
+    table.style.borderCollapse = "collapse";
+    table.style.fontSize = "13px";
 
+    const thead = document.createElement("thead");
+    const hr = document.createElement("tr");
+    ["Observable","Niveau (1–4)","Compteur (+)","Commentaire"].forEach(t=>{
+      const th = document.createElement("th");
+      th.textContent = t;
+      th.style.border = "1px solid #000";
+      th.style.padding = "4px";
+      th.style.background = "#f3f4f6";
+      hr.appendChild(th);
+    });
+    thead.appendChild(hr);
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+
+    target.items.forEach(item => {
       const useLevels = (typeof item.useLevels === "boolean") ? item.useLevels : true;
-      const usePlusMinus = !!item.usePlusMinus;
+      const usePlusMinus = (typeof item.usePlusMinus === "boolean") ? item.usePlusMinus : true;
       const useComment = (typeof item.useComment === "boolean") ? item.useComment : true;
 
-      let html = `<strong>${item.text}</strong><br>`;
+      const tr = document.createElement("tr");
 
-      if(useLevels && typeof item.level === "number"){
-        html += `Niveau : ${item.level} / 4<br>`;
-      }
+      const tdObs = document.createElement("td");
+      tdObs.textContent = item.text;
+      tdObs.style.border = "1px solid #000";
+      tdObs.style.padding = "4px";
 
-      if(usePlusMinus && (item.plus || item.minus)){
-        html += `+ : ${item.plus || 0} / - : ${item.minus || 0}<br>`;
-      }
+      const tdLevel = document.createElement("td");
+      tdLevel.style.border = "1px solid #000";
+      tdLevel.style.padding = "4px";
+      tdLevel.textContent = (useLevels && typeof item.level === "number") ? item.level : "";
 
-      if(useComment && item.note){
-        html += `Commentaire : ${item.note}<br>`;
-      }
+      const tdCount = document.createElement("td");
+      tdCount.style.border = "1px solid #000";
+      tdCount.style.padding = "4px";
+      tdCount.textContent = usePlusMinus ? (item.plus || 0) : "";
 
-      li.innerHTML = html;
-      ul.appendChild(li);
+      const tdNote = document.createElement("td");
+      tdNote.style.border = "1px solid #000";
+      tdNote.style.padding = "4px";
+      tdNote.textContent = useComment ? (item.note || "") : "";
+
+      tr.appendChild(tdObs);
+      tr.appendChild(tdLevel);
+      tr.appendChild(tdCount);
+      tr.appendChild(tdNote);
+
+      tbody.appendChild(tr);
     });
 
-    bloc.appendChild(ul);
+    table.appendChild(tbody);
+    bloc.appendChild(table);
 
     if (target.comment) {
       const p = document.createElement("p");
@@ -941,10 +1014,25 @@ function renderBilanPage() {
 
     container.appendChild(bloc);
   });
+
+  // Bouton reset (si présent dans le HTML)
+  const resetBtn = $("btnResetAll");
+  if (resetBtn) {
+    resetBtn.onclick = () => {
+      const ok = confirm(
+        "Êtes-vous sûr de vouloir tout effacer ?\n" +
+        "Vous allez perdre toutes les observations effectuées.\n" +
+        "Le PDF doit avoir été exporté et envoyé par AirDrop à votre prof."
+      );
+      if (!ok) return;
+      localStorage.removeItem(STORAGE_KEY);
+      // On recharge la page pour repartir propre
+      window.location.reload();
+    };
+  }
 }
 
-
-// ---------- EXPORT PDF ----------
+// EXPORT PDF (avec pdfMake, style tableau)
 
 $("btnExportPDF").onclick = () => {
   if (!appState.session) {
@@ -954,84 +1042,91 @@ $("btnExportPDF").onclick = () => {
 
   const session = appState.session;
 
-  // Titre PDF
-  const pdfContent = [
+  const docContent = [];
+
+  docContent.push(
     { text: "EPS OBSERVER", style: "header", alignment: "center" },
-    { text: "\n" }
-  ];
+    { text: "\n" },
+    {
+      text: session.mode === "observer"
+        ? `DOSSIER D’OBSERVATION – ${session.selfName}`
+        : `DOSSIER D’OBSERVATION – ${session.selfName}`,
+      style: "title",
+      alignment: "center"
+    },
+    { text: "\n" },
+    {
+      text: `APSA : ${session.apsa} — Niveau ${session.level}\nDate : ${new Date(session.dateIso).toLocaleString()}`,
+      style: "subheader",
+      margin: [0,0,0,10]
+    }
+  );
 
-  pdfContent.push({
-    text: session.mode === "observer"
-      ? `COMPÉTENCE D’OBSERVATEUR — ${session.selfName}`
-      : `DOSSIER D’OBSERVATION — ${session.selfName}`,
-    style: "title",
-    alignment: "center"
-  });
-
-  pdfContent.push({ text: "\n" });
-
-  pdfContent.push({
-    text: `APSA : ${session.apsa} — Niveau ${session.level}\nDate : ${new Date(session.dateIso).toLocaleString()}`,
-    style: "subheader"
-  });
-
-  pdfContent.push({ text: "\n\n" });
-
-  // SECTION pour chaque personne observée / observateur
   session.targets.forEach(target => {
-    pdfContent.push({
-      text:
-        (session.mode === "observer"
-          ? `J’ai observé : `
-          : `J’ai été observé par : `) + target.name,
-      style: "sectionHeader"
-    });
+    docContent.push(
+      {
+        text:
+          (session.mode === "observer"
+            ? `Jérôme est observateur de : ${target.name}`
+            : `${session.selfName} est observé par : ${target.name}`),
+        style: "sectionHeader",
+        margin: [0,10,0,4]
+      }
+    );
 
-    // Observables sous forme de blocs texte
+    const body = [];
+    // en-tête du tableau
+    body.push([
+      { text: "Observable", style: "tableHeader" },
+      { text: "Niveau (1–4)", style: "tableHeader" },
+      { text: "Compteur (+)", style: "tableHeader" },
+      { text: "Commentaire", style: "tableHeader" }
+    ]);
+
     target.items.forEach(item => {
       const useLevels = (typeof item.useLevels === "boolean") ? item.useLevels : true;
-      const usePlusMinus = !!item.usePlusMinus;
+      const usePlusMinus = (typeof item.usePlusMinus === "boolean") ? item.usePlusMinus : true;
       const useComment = (typeof item.useComment === "boolean") ? item.useComment : true;
 
-      const lines = [];
-      lines.push(item.text);
+      body.push([
+        item.text || "",
+        useLevels && typeof item.level === "number" ? String(item.level) : "",
+        usePlusMinus ? String(item.plus || 0) : "",
+        useComment ? (item.note || "") : ""
+      ]);
+    });
 
-      if(useLevels && typeof item.level === "number"){
-        lines.push(`Niveau : ${item.level} / 4`);
+    docContent.push({
+      table: {
+        headerRows: 1,
+        widths: ["*", "auto", "auto", "*"],
+        body
+      },
+      layout: {
+        fillColor: function (rowIndex) {
+          return rowIndex === 0 ? "#eeeeee" : null;
+        }
       }
-      if(usePlusMinus && (item.plus || item.minus)){
-        lines.push(`+ : ${item.plus || 0} / - : ${item.minus || 0}`);
-      }
-      if(useComment && item.note){
-        lines.push(`Commentaire : ${item.note}`);
-      }
-
-      pdfContent.push({
-        text: lines.join("\n"),
-        margin: [0, 0, 0, 8]
-      });
     });
 
     if (target.comment) {
-      pdfContent.push({
+      docContent.push({
         text: `Commentaire global : ${target.comment}`,
         italics: true,
-        margin: [0, 4, 0, 10]
+        margin: [0,4,0,0]
       });
     }
-
-    pdfContent.push({ text: "\n" });
   });
 
-  // Styles PDF
   const styles = {
     header: { fontSize: 24, bold: true },
     title: { fontSize: 18, bold: true },
-    subheader: { fontSize: 12, bold: false },
-    sectionHeader: { fontSize: 14, bold: true, margin: [0, 10, 0, 5] }
+    subheader: { fontSize: 12 },
+    sectionHeader: { fontSize: 14, bold: true },
+    tableHeader: { bold: true }
   };
 
-  pdfMake.createPdf({ content: pdfContent, styles }).download(
+  pdfMake.createPdf({ content: docContent, styles }).download(
     `${session.selfName}_${session.mode}_${session.apsa}.pdf`
   );
 };
