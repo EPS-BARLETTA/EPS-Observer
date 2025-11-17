@@ -46,21 +46,7 @@ html,body{
   display:block;
 }
 
-/* TOP BAR */
-
-.topbar{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  margin-bottom:12px;
-}
-
-.topbar h2{
-  margin:0;
-  font-size:20px;
-}
-
-/* HERO (page de garde) */
+/* HERO COVER */
 
 .hero{
   min-height:70vh;
@@ -146,7 +132,7 @@ h3{
   flex-wrap:wrap;
 }
 
-/* BOUTONS */
+/* BUTTONS */
 
 .btn{
   border:0;
@@ -229,7 +215,7 @@ textarea::placeholder{
   color:#9ca3af;
 }
 
-/* CHIPS (tags noms élèves / observateurs) */
+/* CHIPS */
 
 .chips{
   display:flex;
@@ -256,7 +242,7 @@ textarea::placeholder{
   color:#6b7280;
 }
 
-/* LISTE OBSERVABLES */
+/* OBSERVABLES LIST */
 
 #observableList{
   display:flex;
@@ -355,7 +341,7 @@ textarea::placeholder{
   background:#dcfce7;
 }
 
-/* NIVEAUX (4 ronds) */
+/* LEVELS */
 
 #levelButtons{
   display:flex;
@@ -386,7 +372,7 @@ textarea::placeholder{
   outline-offset:2px;
 }
 
-/* PAGE RÔLE */
+/* ROLE PAGE */
 
 #roleForm.hidden{
   display:none;
@@ -412,7 +398,7 @@ textarea::placeholder{
   padding:12px 18px;
 }
 
-/* TABS CIBLES (élèves observés / observateurs) */
+/* TARGET TABS */
 
 #targetTabs{
   display:flex;
@@ -435,7 +421,7 @@ textarea::placeholder{
   background:#dbeafe;
 }
 
-/* ZONE D'OBSERVATION (contenu injecté en JS) */
+/* OBSERVATION AREA */
 
 #observationArea{
   display:flex;
@@ -468,7 +454,7 @@ textarea::placeholder{
   font-size:14px;
 }
 
-/* LIGNE D'UN OBSERVABLE DANS LA SESSION */
+/* OBSERVABLE ROW */
 
 .obs-row{
   display:flex;
@@ -488,50 +474,48 @@ textarea::placeholder{
   align-items:center;
 }
 
-/* COMPTEUR + / - */
+/* COUNTER (FINAL VERSION) */
 
 .counter-wrapper{
   display:inline-flex;
   align-items:center;
-  gap:6px;
+  gap:10px;
 }
 
 .counter-button{
-  width:40px;
-  height:40px;
+  width:48px;
+  height:48px;
   border-radius:999px;
-  border:1px solid var(--border);
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:24px;
+  font-size:26px;
   font-weight:700;
   cursor:pointer;
-  background:#f9fafb;
+  color:#ffffff;
+}
+
+.counter-button.minus{
+  background:#ef4444;
+}
+
+.counter-button.plus{
+  background:#16a34a;
 }
 
 .counter-value{
-  min-width:26px;
+  min-width:30px;
   text-align:center;
-  font-weight:600;
+  font-size:18px;
+  font-weight:700;
 }
 
-/* NIVEAUX DANS LA LIGNE */
+/* INLINE LEVELS */
 
 .level-inline{
   display:flex;
   gap:6px;
-}
-
-/* PETITES ÉTIQUETTES */
-
-.badge{
-  display:inline-flex;
-  align-items:center;
-  padding:2px 8px;
-  border-radius:999px;
-  font-size:11px;
-  background:#e5e7eb;
+  margin-left:0;
 }
 
 /* BILAN */
@@ -555,8 +539,6 @@ textarea::placeholder{
   margin-top:0;
   margin-bottom:6px;
 }
-
-/* UTILS */
 
 .hidden{
   display:none !important;
